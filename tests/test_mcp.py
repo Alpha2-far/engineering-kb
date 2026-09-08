@@ -201,7 +201,12 @@ def test_audit_code_snippet_out_of_scope_file():
 
 def test_cli_mcp_help():
     """La commande 'kb mcp --help' s'exécute correctement."""
+    import re
+
     result = runner.invoke(app, ["mcp", "--help"])
     assert result.exit_code == 0
     assert "Démarre le serveur MCP natif" in result.output
-    assert "--transport" in result.output
+    plain_output = re.sub(r"\x1b\[[0-9;]*m", "", result.output)
+    assert "--transport" in plain_output
+    assert "stdio" in plain_output
+
