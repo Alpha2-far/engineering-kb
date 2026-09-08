@@ -1,7 +1,7 @@
 {
   "profile": "api",
-  "generated_at": "2026-09-08T10:20:29+00:00",
-  "count": 39,
+  "generated_at": "2026-09-08T10:56:23+00:00",
+  "count": 42,
   "rules": [
     {
       "id": "ai-ml/output-handling/llm-generated-sql-not-parameterized",
@@ -284,7 +284,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0015"
+      "ref": "KB-0016"
     },
     {
       "id": "app-security/command-injection/user-input-concatenated-into-shell",
@@ -381,7 +381,7 @@
       ],
       "extracted_at": "2026-08-10",
       "extractor": "claude-opus-4-6",
-      "ref": "KB-0018"
+      "ref": "KB-0019"
     },
     {
       "id": "app-security/deserialization/untrusted-data-loaded-with-pickle-or-yaml",
@@ -465,7 +465,7 @@
       "owasp": [],
       "extracted_at": "2026-08-10",
       "extractor": "claude-opus-4-6",
-      "ref": "KB-0020"
+      "ref": "KB-0021"
     },
     {
       "id": "authentication/jwt/algorithm-not-pinned-at-verification",
@@ -567,7 +567,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0027"
+      "ref": "KB-0028"
     },
     {
       "id": "authentication/password-storage/fast-hash-used-for-passwords",
@@ -666,7 +666,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0029"
+      "ref": "KB-0030"
     },
     {
       "id": "authorization/multi-tenant/tenant-id-taken-from-request",
@@ -755,7 +755,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0031"
+      "ref": "KB-0033"
     },
     {
       "id": "authorization/object-level/missing-ownership-check-on-id",
@@ -853,7 +853,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0032"
+      "ref": "KB-0034"
     },
     {
       "id": "database/rls/service-key-used-outside-server",
@@ -958,7 +958,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0036"
+      "ref": "KB-0038"
     },
     {
       "id": "database/rls/table-in-exposed-schema-without-rls",
@@ -1052,7 +1052,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0037"
+      "ref": "KB-0039"
     },
     {
       "id": "database/sql-injection/dynamic-query-string-concatenation",
@@ -1159,7 +1159,84 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0039"
+      "ref": "KB-0041"
+    },
+    {
+      "id": "devops/containers/docker-socket-mounted-in-container",
+      "title": "Interdire le montage du socket Docker /var/run/docker.sock dans un conteneur",
+      "category": "devops",
+      "subcategory": "containers",
+      "severity": "critical",
+      "confidence": "high",
+      "description": "Le socket Docker (/var/run/docker.sock) ne doit jamais etre expose ni monte dans un conteneur applicatif, car cela accorde un acces racine complet et sans restriction au demon Docker et a l'hote sous-jacent.",
+      "rationale": "Donner l'acces au socket Unix Docker permet a un attaquant ayant compromis le conteneur de creer d'autres conteneurs avec privileges root, monter le systeme de fichiers racine de l'hote et s'echapper completement de l'isolation du conteneur.",
+      "remediation": "Retirer le volume /var/run/docker.sock des fichiers docker-compose et commandes docker run. Utiliser une API dediee ou un demon isole pour les operations de build.",
+      "context": {
+        "languages": [
+          "yaml"
+        ],
+        "frameworks": [
+          "docker",
+          "docker-compose"
+        ],
+        "platforms": [],
+        "project_types": [
+          "saas",
+          "api",
+          "pipeline",
+          "cli"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "[\"'\\-]?/var/run/docker\\.sock\\s*:\\s*/var/run/docker\\.sock",
+          "applies_to": [
+            "**/docker-compose*.yml",
+            "**/docker-compose*.yaml",
+            "**/compose*.yml",
+            "**/compose*.yaml"
+          ],
+          "note": "Montage dangereux de /var/run/docker.sock dans le conteneur."
+        }
+      ],
+      "autofix": "review",
+      "vulnerable_example": {
+        "lang": "yaml",
+        "code": "services:\n  app:\n    image: myapp:latest\n    volumes:\n      - \"/var/run/docker.sock:/var/run/docker.sock\"\n",
+        "explanation": "Le conteneur applicatif recoit le controle total sur le demon Docker de l'hote."
+      },
+      "fixed_example": {
+        "lang": "yaml",
+        "code": "services:\n  app:\n    image: myapp:latest\n    volumes:\n      - \"app_data:/data\"\nvolumes:\n  app_data:\n",
+        "explanation": "L'application n'a acces qu'a ses volumes dedies, sans toucher au socket demon."
+      },
+      "frameworks": [],
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Docker_Security_Cheat_Sheet.md",
+          "doc_sha256": "3442288cd44dda71aed39e82d6abb7d1d6ffb12350ad1a667d8299c2b5488a43",
+          "quote": "Docker socket _/var/run/docker.sock_ is the UNIX socket that Docker is listening to. This is the primary entry point for the Docker API. The owner of this socket is root. Giving someone access to it is equivalent to giving unrestricted root access to your host.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html",
+          "anchor": "RULE"
+        }
+      ],
+      "tags": [
+        "docker",
+        "docker-compose",
+        "conteneurs",
+        "privilege-escalation"
+      ],
+      "cwe": [
+        "CWE-250"
+      ],
+      "owasp": [
+        "A05:2021"
+      ],
+      "extracted_at": "2026-08-01",
+      "extractor": "claude-opus-5",
+      "ref": "KB-0043"
     },
     {
       "id": "devops/github-actions/context-interpolated-into-run-block",
@@ -1250,7 +1327,81 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0043"
+      "ref": "KB-0046"
+    },
+    {
+      "id": "devops/github-actions/pull-request-target-untrusted-checkout",
+      "title": "Eviter pull_request_target lors de l'extraction de code non approuve",
+      "category": "devops",
+      "subcategory": "github-actions",
+      "severity": "critical",
+      "confidence": "high",
+      "description": "Les workflows GitHub Actions declenches par pull_request_target s'executent dans le contexte du depot cible avec acces aux secrets et au GITHUB_TOKEN en ecriture. Ils ne doivent jamais extraire (checkout) ni executer du code provenant de la PR.",
+      "rationale": "Si un workflow pull_request_target extrait la branche source d'un fork non approuve et execute des scripts (ex: npm test, build), un attaquant externe peut soumettre une PR pour executer du code arbitraire et voler les secrets de production du depot.",
+      "remediation": "Utiliser le declencheur standard 'pull_request' pour les verifications de code non approuve (qui s'execute sans secrets). Reserver pull_request_target uniquement a des actions administratives (triage, labels) sans jamais checkout le code de la PR.",
+      "context": {
+        "languages": [
+          "yaml"
+        ],
+        "frameworks": [
+          "github-actions"
+        ],
+        "platforms": [],
+        "project_types": [
+          "pipeline",
+          "saas",
+          "api"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "pull_request_target",
+          "applies_to": [
+            ".github/workflows/*.yml",
+            ".github/workflows/*.yaml"
+          ],
+          "note": "Utilisation du declencheur privilegie pull_request_target a risque d'exfiltration."
+        }
+      ],
+      "autofix": "review",
+      "vulnerable_example": {
+        "lang": "yaml",
+        "code": "on: pull_request_target\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: ${{ github.event.pull_request.head.sha }}\n      - run: npm test\n",
+        "explanation": "Le code de la PR du fork est execute avec acces complet aux secrets du depot cible."
+      },
+      "fixed_example": {
+        "lang": "yaml",
+        "code": "on: pull_request\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm test\n",
+        "explanation": "Le workflow standard pull_request s'execute en bac a sable sans secrets de production."
+      },
+      "frameworks": [],
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.md",
+          "doc_sha256": "241c43a49aa6853f0a1688efb885f3ced52290771309a3ee403d612f47a81fda",
+          "quote": "Workflows triggered by `pull_request_target` run in the context of the base (target) repository and have access to the `GITHUB_TOKEN` with `write` permissions and GitHub secrets available to the workflow.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.html",
+          "anchor": "Avoid using the pull_request_target trigger"
+        }
+      ],
+      "tags": [
+        "github-actions",
+        "ci-cd",
+        "devops",
+        "supply-chain",
+        "secrets"
+      ],
+      "cwe": [
+        "CWE-829"
+      ],
+      "owasp": [
+        "A05:2021"
+      ],
+      "extracted_at": "2026-08-01",
+      "extractor": "claude-opus-5",
+      "ref": "KB-0047"
     },
     {
       "id": "devops/secrets/secret-hardcoded-in-source",
@@ -1357,7 +1508,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0045"
+      "ref": "KB-0049"
     },
     {
       "id": "ai-ml/agency/high-impact-tool-without-human-approval",
@@ -1924,7 +2075,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0016"
+      "ref": "KB-0017"
     },
     {
       "id": "app-security/file-upload/extension-and-type-not-validated",
@@ -2027,7 +2178,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0022"
+      "ref": "KB-0023"
     },
     {
       "id": "app-security/logging/secrets-written-to-logs",
@@ -2119,7 +2270,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0023"
+      "ref": "KB-0024"
     },
     {
       "id": "app-security/path-traversal/user-controlled-path-not-confined",
@@ -2203,7 +2354,7 @@
       "owasp": [],
       "extracted_at": "2026-08-10",
       "extractor": "claude-opus-4-6",
-      "ref": "KB-0024"
+      "ref": "KB-0025"
     },
     {
       "id": "authentication/jwt/hmac-secret-too-short",
@@ -2295,7 +2446,94 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0028"
+      "ref": "KB-0029"
+    },
+    {
+      "id": "authentication/session-management/cookie-missing-samesite-attribute",
+      "title": "Configurer explicitement SameSite=Lax ou Strict sur les cookies de session",
+      "category": "authentication",
+      "subcategory": "session-management",
+      "severity": "high",
+      "confidence": "high",
+      "description": "Tout cookie de session ou d'authentification doit declarer explicitement l'attribut SameSite (Strict ou Lax) afin d'interdire au navigateur d'envoyer le cookie lors de requetes inter-sites non sollicitees et de prevenir les attaques CSRF.",
+      "rationale": "Sans attribut SameSite explicite ou avec SameSite=None, le cookie de session est transmis lors de requetes cross-origin (liens externes, iframes, formulaires tiers), exposant l'application a des falsifications de requetes (CSRF) et a des fuites de donnees d'etat.",
+      "remediation": "Definir samesite='lax' (ou 'strict') lors de la definition du cookie, combine avec httponly=True et secure=True. Ne jamais utiliser samesite='none' sans secure=True.",
+      "context": {
+        "languages": [
+          "python",
+          "typescript",
+          "javascript"
+        ],
+        "frameworks": [
+          "fastapi",
+          "starlette",
+          "express",
+          "nextjs"
+        ],
+        "platforms": [],
+        "project_types": [
+          "saas",
+          "api",
+          "static-site"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "set_cookie\\s*\\([^)]*samesite\\s*=\\s*[\"']none[\"'](?![^)]*secure\\s*=\\s*True)",
+          "applies_to": [
+            "**/*.py"
+          ],
+          "note": "Cookie avec SameSite=None sans Secure=True."
+        },
+        {
+          "kind": "grep",
+          "pattern": "res(ponse)?\\.cookie\\s*\\([^)]*sameSite\\s*:\\s*[\"']none[\"'](?![^)]*secure\\s*:\\s*true)",
+          "applies_to": [
+            "**/*.ts",
+            "**/*.js"
+          ],
+          "note": "Cookie Express/Node avec sameSite=none sans secure=true."
+        }
+      ],
+      "autofix": "review",
+      "vulnerable_example": {
+        "lang": "python",
+        "code": "response.set_cookie(\n    key=\"session_id\",\n    value=token,\n    httponly=True,\n    samesite=\"none\",\n)\n",
+        "explanation": "SameSite=none sans secure permet l'envoi du cookie en requete inter-sites non chiffree."
+      },
+      "fixed_example": {
+        "lang": "python",
+        "code": "response.set_cookie(\n    key=\"session_id\",\n    value=token,\n    httponly=True,\n    secure=True,\n    samesite=\"lax\",\n)\n",
+        "explanation": "Le cookie est protege contre l'injection inter-sites et transmis uniquement sur HTTPS."
+      },
+      "frameworks": [],
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Session_Management_Cheat_Sheet.md",
+          "doc_sha256": "bf6d4c21941abcb844ce884be7f20cf0a884d86c84eb6bd0df3827bcce55e7e2",
+          "quote": "The `SameSite` attribute prevents the browser from sending the cookie on cross-site requests, mitigating cross-origin leakage and providing CSRF defense. Session cookies must explicitly set `SameSite=Strict` (preferred) or `SameSite=Lax`. Never use `SameSite=None` without `Secure`, and do not rely on the browser-default value, which varies across browsers and versions.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html",
+          "anchor": "SameSite Attribute"
+        }
+      ],
+      "tags": [
+        "authentification",
+        "session",
+        "cookies",
+        "samesite",
+        "csrf"
+      ],
+      "cwe": [
+        "CWE-1275"
+      ],
+      "owasp": [
+        "A01:2021"
+      ],
+      "extracted_at": "2026-08-01",
+      "extractor": "claude-opus-5",
+      "ref": "KB-0031"
     },
     {
       "id": "data-protection/pii/content-sent-to-provider-without-redaction",
@@ -2378,7 +2616,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0033"
+      "ref": "KB-0035"
     },
     {
       "id": "database/rls/security-definer-function-in-exposed-schema",
@@ -2473,7 +2711,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0035"
+      "ref": "KB-0037"
     },
     {
       "id": "database/rls/view-bypasses-underlying-policies",
@@ -2557,7 +2795,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0038"
+      "ref": "KB-0040"
     },
     {
       "id": "devops/github-actions/action-not-pinned-to-commit-sha",
@@ -2640,7 +2878,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0042"
+      "ref": "KB-0045"
     },
     {
       "id": "network/ssrf/outbound-url-not-allowlisted",
@@ -2729,7 +2967,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0047"
+      "ref": "KB-0051"
     },
     {
       "id": "ai-ml/agency/open-ended-tool-exposed-to-model",
@@ -3029,7 +3267,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0021"
+      "ref": "KB-0022"
     },
     {
       "id": "authentication/enumeration/login-reveals-account-existence",
@@ -3113,7 +3351,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0026"
+      "ref": "KB-0027"
     },
     {
       "id": "authentication/timing/secret-compared-with-equality-operator",
@@ -3210,7 +3448,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0030"
+      "ref": "KB-0032"
     },
     {
       "id": "database/rls/auth-schema-exposed-instead-of-profile-table",
@@ -3283,7 +3521,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0034"
+      "ref": "KB-0036"
     },
     {
       "id": "devops/containers/container-runs-as-root",
@@ -3364,7 +3602,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0040"
+      "ref": "KB-0042"
     },
     {
       "id": "devops/dependencies/dependencies-not-pinned-to-verified-version",
@@ -3440,7 +3678,7 @@
       ],
       "extracted_at": "2026-08-10",
       "extractor": "claude-opus-4-6",
-      "ref": "KB-0041"
+      "ref": "KB-0044"
     },
     {
       "id": "devops/github-actions/workflow-permissions-not-restricted",
@@ -3511,7 +3749,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0044"
+      "ref": "KB-0048"
     }
   ]
 }

@@ -15,6 +15,13 @@ RULES_DIR = KB_ROOT / "rules"
 PACKS_DIR = KB_ROOT / "packs"
 MANIFEST_PATH = RAW_DIR / "manifest.jsonl"
 
+# Si installé comme package (wheel / uvx), rules et packs sont embarqués dans le package
+_PKG_DIR = Path(__file__).resolve().parent
+if not RULES_DIR.exists() and (_PKG_DIR / "rules").exists():
+    RULES_DIR = _PKG_DIR / "rules"
+if not PACKS_DIR.exists() and (_PKG_DIR / "packs").exists():
+    PACKS_DIR = _PKG_DIR / "packs"
+
 
 class Method(str, Enum):
     GIT = "git"

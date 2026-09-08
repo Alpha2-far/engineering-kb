@@ -1,6 +1,6 @@
 {
   "category": "database",
-  "generated_at": "2026-09-08T10:20:29+00:00",
+  "generated_at": "2026-09-08T10:56:23+00:00",
   "count": 6,
   "rules": [
     {
@@ -106,7 +106,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0036"
+      "ref": "KB-0038"
     },
     {
       "id": "database/rls/table-in-exposed-schema-without-rls",
@@ -200,7 +200,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0037"
+      "ref": "KB-0039"
     },
     {
       "id": "database/sql-injection/dynamic-query-string-concatenation",
@@ -307,7 +307,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0039"
+      "ref": "KB-0041"
     },
     {
       "id": "database/rls/security-definer-function-in-exposed-schema",
@@ -402,7 +402,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0035"
+      "ref": "KB-0037"
     },
     {
       "id": "database/rls/view-bypasses-underlying-policies",
@@ -486,7 +486,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0038"
+      "ref": "KB-0040"
     },
     {
       "id": "database/rls/auth-schema-exposed-instead-of-profile-table",
@@ -559,7 +559,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0034"
+      "ref": "KB-0036"
     }
   ]
 }

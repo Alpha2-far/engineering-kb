@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-09-08T10:20:29+00:00",
-  "rule_count": 47,
+  "generated_at": "2026-09-08T10:56:23+00:00",
+  "rule_count": 51,
   "categories": {
     "ai-ml": {
       "file": "by-category/ai-ml.json",
-      "count": 15,
+      "count": 16,
       "severities": {
         "critical": 3,
-        "high": 7,
+        "high": 8,
         "medium": 5
       }
     },
@@ -29,10 +29,10 @@
     },
     "authentication": {
       "file": "by-category/authentication.json",
-      "count": 5,
+      "count": 6,
       "severities": {
         "critical": 2,
-        "high": 1,
+        "high": 2,
         "medium": 2
       }
     },
@@ -61,9 +61,9 @@
     },
     "devops": {
       "file": "by-category/devops.json",
-      "count": 6,
+      "count": 8,
       "severities": {
-        "critical": 2,
+        "critical": 4,
         "high": 1,
         "medium": 3
       }
@@ -86,33 +86,33 @@
   "profiles": {
     "static-site": {
       "file": "profiles/static-site.json",
-      "count": 7,
+      "count": 8,
       "critical": 2
     },
     "saas": {
       "file": "profiles/saas.json",
-      "count": 44,
-      "critical": 14
+      "count": 48,
+      "critical": 16
     },
     "ai-rag": {
       "file": "profiles/ai-rag.json",
-      "count": 42,
+      "count": 43,
       "critical": 13
     },
     "api": {
       "file": "profiles/api.json",
-      "count": 39,
-      "critical": 14
+      "count": 42,
+      "critical": 16
     },
     "pipeline": {
       "file": "profiles/pipeline.json",
-      "count": 17,
-      "critical": 6
+      "count": 19,
+      "critical": 8
     },
     "cli": {
       "file": "profiles/cli.json",
-      "count": 16,
-      "critical": 6
+      "count": 17,
+      "critical": 7
     },
     "mobile": {
       "file": "profiles/mobile.json",
@@ -124,78 +124,81 @@
     "languages": {
       "javascript": [
         "KB-0009",
-        "KB-0018",
-        "KB-0036",
-        "KB-0008",
-        "KB-0017",
         "KB-0019",
-        "KB-0024",
+        "KB-0038",
+        "KB-0008",
+        "KB-0018",
+        "KB-0020",
         "KB-0025",
-        "KB-0046",
-        "KB-0030",
-        "KB-0041"
+        "KB-0026",
+        "KB-0031",
+        "KB-0050",
+        "KB-0032",
+        "KB-0044"
       ],
       "python": [
         "KB-0007",
         "KB-0009",
-        "KB-0015",
-        "KB-0018",
-        "KB-0020",
-        "KB-0027",
-        "KB-0029",
-        "KB-0031",
-        "KB-0032",
-        "KB-0036",
-        "KB-0039",
-        "KB-0045",
+        "KB-0016",
+        "KB-0019",
+        "KB-0021",
+        "KB-0028",
+        "KB-0030",
+        "KB-0033",
+        "KB-0034",
+        "KB-0038",
+        "KB-0041",
+        "KB-0049",
         "KB-0001",
         "KB-0003",
         "KB-0005",
         "KB-0010",
         "KB-0011",
         "KB-0013",
-        "KB-0016",
+        "KB-0015",
         "KB-0017",
-        "KB-0019",
-        "KB-0022",
+        "KB-0018",
+        "KB-0020",
         "KB-0023",
         "KB-0024",
         "KB-0025",
-        "KB-0028",
-        "KB-0033",
-        "KB-0047",
+        "KB-0026",
+        "KB-0029",
+        "KB-0031",
+        "KB-0035",
+        "KB-0051",
         "KB-0002",
         "KB-0004",
         "KB-0006",
         "KB-0012",
         "KB-0014",
-        "KB-0021",
-        "KB-0026",
-        "KB-0030",
-        "KB-0041"
+        "KB-0022",
+        "KB-0027",
+        "KB-0032",
+        "KB-0044"
       ],
       "sql": [
         "KB-0007",
-        "KB-0015",
-        "KB-0037",
+        "KB-0016",
         "KB-0039",
+        "KB-0041",
         "KB-0003",
-        "KB-0035",
-        "KB-0038",
-        "KB-0034"
+        "KB-0037",
+        "KB-0040",
+        "KB-0036"
       ],
       "typescript": [
         "KB-0007",
         "KB-0009",
-        "KB-0015",
-        "KB-0018",
-        "KB-0027",
-        "KB-0029",
-        "KB-0031",
-        "KB-0032",
-        "KB-0036",
-        "KB-0039",
-        "KB-0045",
+        "KB-0016",
+        "KB-0019",
+        "KB-0028",
+        "KB-0030",
+        "KB-0033",
+        "KB-0034",
+        "KB-0038",
+        "KB-0041",
+        "KB-0049",
         "KB-0001",
         "KB-0003",
         "KB-0005",
@@ -203,104 +206,140 @@
         "KB-0010",
         "KB-0011",
         "KB-0013",
-        "KB-0016",
+        "KB-0015",
         "KB-0017",
-        "KB-0019",
-        "KB-0022",
+        "KB-0018",
+        "KB-0020",
         "KB-0023",
         "KB-0024",
         "KB-0025",
-        "KB-0028",
-        "KB-0033",
-        "KB-0046",
-        "KB-0047",
+        "KB-0026",
+        "KB-0029",
+        "KB-0031",
+        "KB-0035",
+        "KB-0050",
+        "KB-0051",
         "KB-0002",
         "KB-0004",
         "KB-0006",
         "KB-0012",
         "KB-0014",
-        "KB-0021",
-        "KB-0026",
-        "KB-0030",
-        "KB-0041"
+        "KB-0022",
+        "KB-0027",
+        "KB-0032",
+        "KB-0044"
+      ],
+      "yaml": [
+        "KB-0043",
+        "KB-0047"
       ]
     },
     "frameworks": {
+      "chromadb": [
+        "KB-0015"
+      ],
+      "docker": [
+        "KB-0043"
+      ],
+      "docker-compose": [
+        "KB-0043"
+      ],
       "express": [
-        "KB-0027",
-        "KB-0031",
-        "KB-0032",
+        "KB-0028",
+        "KB-0033",
+        "KB-0034",
         "KB-0005",
-        "KB-0016",
+        "KB-0017",
+        "KB-0023",
+        "KB-0031",
         "KB-0022",
-        "KB-0021",
-        "KB-0030"
+        "KB-0032"
       ],
       "fastapi": [
         "KB-0007",
-        "KB-0027",
-        "KB-0031",
-        "KB-0032",
-        "KB-0039",
+        "KB-0028",
+        "KB-0033",
+        "KB-0034",
+        "KB-0041",
         "KB-0005",
         "KB-0011",
         "KB-0013",
-        "KB-0016",
-        "KB-0022",
+        "KB-0017",
+        "KB-0023",
+        "KB-0031",
         "KB-0006",
-        "KB-0021",
-        "KB-0026",
-        "KB-0030"
+        "KB-0022",
+        "KB-0027",
+        "KB-0032"
+      ],
+      "github-actions": [
+        "KB-0047"
       ],
       "langchain": [
-        "KB-0015",
+        "KB-0016",
         "KB-0011",
-        "KB-0013"
+        "KB-0013",
+        "KB-0015"
+      ],
+      "llama-index": [
+        "KB-0015"
       ],
       "llamaindex": [
-        "KB-0015",
+        "KB-0016",
         "KB-0011",
         "KB-0013"
       ],
       "next": [
-        "KB-0027",
-        "KB-0031",
-        "KB-0032",
-        "KB-0036",
+        "KB-0028",
+        "KB-0033",
+        "KB-0034",
+        "KB-0038",
         "KB-0005",
         "KB-0008",
+        "KB-0023",
+        "KB-0050",
         "KB-0022",
-        "KB-0046",
-        "KB-0021",
-        "KB-0026",
-        "KB-0030"
+        "KB-0027",
+        "KB-0032"
+      ],
+      "nextjs": [
+        "KB-0031"
+      ],
+      "pinecone": [
+        "KB-0015"
       ],
       "prisma": [
-        "KB-0039",
-        "KB-0016"
+        "KB-0041",
+        "KB-0017"
       ],
       "pydantic": [
-        "KB-0016",
+        "KB-0017",
         "KB-0006"
       ],
       "react": [
-        "KB-0036",
+        "KB-0038",
         "KB-0008",
-        "KB-0046"
+        "KB-0050"
       ],
       "sqlalchemy": [
         "KB-0007",
-        "KB-0039"
+        "KB-0041"
+      ],
+      "starlette": [
+        "KB-0031"
+      ],
+      "supabase": [
+        "KB-0015"
       ],
       "svelte": [
-        "KB-0046"
+        "KB-0050"
       ],
       "vite": [
-        "KB-0036"
+        "KB-0038"
       ],
       "vue": [
         "KB-0008",
-        "KB-0046"
+        "KB-0050"
       ],
       "zod": [
         "KB-0006"
@@ -308,57 +347,57 @@
     },
     "platforms": {
       "docker": [
-        "KB-0040"
+        "KB-0042"
       ],
       "github-actions": [
-        "KB-0043",
-        "KB-0042",
-        "KB-0044"
+        "KB-0046",
+        "KB-0045",
+        "KB-0048"
       ],
       "pgvector": [
-        "KB-0015"
+        "KB-0016"
       ],
       "postgresql": [
         "KB-0007",
-        "KB-0015",
-        "KB-0031",
-        "KB-0032",
-        "KB-0037",
+        "KB-0016",
+        "KB-0033",
+        "KB-0034",
         "KB-0039",
+        "KB-0041",
         "KB-0003",
-        "KB-0035",
-        "KB-0038"
+        "KB-0037",
+        "KB-0040"
       ],
       "railway": [
-        "KB-0040"
+        "KB-0042"
       ],
       "supabase": [
         "KB-0007",
-        "KB-0015",
-        "KB-0031",
-        "KB-0032",
-        "KB-0036",
-        "KB-0037",
-        "KB-0039",
-        "KB-0003",
-        "KB-0035",
+        "KB-0016",
+        "KB-0033",
+        "KB-0034",
         "KB-0038",
-        "KB-0034"
+        "KB-0039",
+        "KB-0041",
+        "KB-0003",
+        "KB-0037",
+        "KB-0040",
+        "KB-0036"
       ]
     }
   },
   "severity_totals": {
-    "critical": 14,
-    "high": 21,
+    "critical": 16,
+    "high": 23,
     "medium": 12
   },
   "autofix_totals": {
-    "review": 25,
+    "review": 29,
     "never": 22
   },
   "sources_used": {
     "owasp-llm-top10": 27,
-    "owasp-cheatsheets": 45,
+    "owasp-cheatsheets": 49,
     "supabase": 10,
     "owasp-asvs": 1,
     "fastapi": 4

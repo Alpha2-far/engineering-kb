@@ -1253,3 +1253,263 @@ rules:
     owasp: ['A05:2021']
     extracted_at: '2026-08-01'
     extractor: claude-opus-5
+
+  - id: authentication/session-management/cookie-missing-samesite-attribute
+    title: Configurer explicitement SameSite=Lax ou Strict sur les cookies de session
+    category: authentication
+    subcategory: session-management
+    severity: high
+    confidence: high
+    description: >-
+      Tout cookie de session ou d'authentification doit declarer explicitement l'attribut
+      SameSite (Strict ou Lax) afin d'interdire au navigateur d'envoyer le cookie lors
+      de requetes inter-sites non sollicitees et de prevenir les attaques CSRF.
+    rationale: >-
+      Sans attribut SameSite explicite ou avec SameSite=None, le cookie de session est
+      transmis lors de requetes cross-origin (liens externes, iframes, formulaires tiers),
+      exposant l'application a des falsifications de requetes (CSRF) et a des fuites
+      de donnees d'etat.
+    remediation: >-
+      Definir samesite='lax' (ou 'strict') lors de la definition du cookie, combine avec
+      httponly=True et secure=True. Ne jamais utiliser samesite='none' sans secure=True.
+    context:
+      languages: [python, typescript, javascript]
+      frameworks: [fastapi, starlette, express, nextjs]
+      project_types: [saas, api, static-site]
+    detection:
+      - kind: grep
+        pattern: 'set_cookie\s*\([^)]*samesite\s*=\s*["'']none["''](?![^)]*secure\s*=\s*True)'
+        applies_to: ['**/*.py']
+        note: Cookie avec SameSite=None sans Secure=True.
+      - kind: grep
+        pattern: 'res(ponse)?\.cookie\s*\([^)]*sameSite\s*:\s*["'']none["''](?![^)]*secure\s*:\s*true)'
+        applies_to: ['**/*.ts', '**/*.js']
+        note: Cookie Express/Node avec sameSite=none sans secure=true.
+    autofix: review
+    vulnerable_example:
+      lang: python
+      code: |
+        response.set_cookie(
+            key="session_id",
+            value=token,
+            httponly=True,
+            samesite="none",
+        )
+      explanation: >-
+        SameSite=none sans secure permet l'envoi du cookie en requete inter-sites non chiffree.
+    fixed_example:
+      lang: python
+      code: |
+        response.set_cookie(
+            key="session_id",
+            value=token,
+            httponly=True,
+            secure=True,
+            samesite="lax",
+        )
+      explanation: >-
+        Le cookie est protege contre l'injection inter-sites et transmis uniquement sur HTTPS.
+    evidence:
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/Session_Management_Cheat_Sheet.md
+        doc_sha256: bf6d4c21941abcb844ce884be7f20cf0a884d86c84eb6bd0df3827bcce55e7e2
+        anchor: SameSite Attribute
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+        quote: |-
+          The `SameSite` attribute prevents the browser from sending the cookie on cross-site requests, mitigating cross-origin leakage and providing CSRF defense. Session cookies must explicitly set `SameSite=Strict` (preferred) or `SameSite=Lax`. Never use `SameSite=None` without `Secure`, and do not rely on the browser-default value, which varies across browsers and versions.
+    tags: [authentification, session, cookies, samesite, csrf]
+    cwe: ['CWE-1275']
+    owasp: ['A01:2021']
+    extracted_at: '2026-08-01'
+    extractor: claude-opus-5
+
+  - id: devops/containers/docker-socket-mounted-in-container
+    title: Interdire le montage du socket Docker /var/run/docker.sock dans un conteneur
+    category: devops
+    subcategory: containers
+    severity: critical
+    confidence: high
+    description: >-
+      Le socket Docker (/var/run/docker.sock) ne doit jamais etre expose ni monte dans
+      un conteneur applicatif, car cela accorde un acces racine complet et sans restriction
+      au demon Docker et a l'hote sous-jacent.
+    rationale: >-
+      Donner l'acces au socket Unix Docker permet a un attaquant ayant compromis le
+      conteneur de creer d'autres conteneurs avec privileges root, monter le systeme de
+      fichiers racine de l'hote et s'echapper completement de l'isolation du conteneur.
+    remediation: >-
+      Retirer le volume /var/run/docker.sock des fichiers docker-compose et commandes
+      docker run. Utiliser une API dediee ou un demon isole pour les operations de build.
+    context:
+      languages: [yaml]
+      frameworks: [docker, docker-compose]
+      project_types: [saas, api, pipeline, cli]
+    detection:
+      - kind: grep
+        pattern: '["''\-]?/var/run/docker\.sock\s*:\s*/var/run/docker\.sock'
+        applies_to: ['**/docker-compose*.yml', '**/docker-compose*.yaml', '**/compose*.yml', '**/compose*.yaml']
+        note: Montage dangereux de /var/run/docker.sock dans le conteneur.
+    autofix: review
+    vulnerable_example:
+      lang: yaml
+      code: |
+        services:
+          app:
+            image: myapp:latest
+            volumes:
+              - "/var/run/docker.sock:/var/run/docker.sock"
+      explanation: >-
+        Le conteneur applicatif recoit le controle total sur le demon Docker de l'hote.
+    fixed_example:
+      lang: yaml
+      code: |
+        services:
+          app:
+            image: myapp:latest
+            volumes:
+              - "app_data:/data"
+        volumes:
+          app_data:
+      explanation: >-
+        L'application n'a acces qu'a ses volumes dedies, sans toucher au socket demon.
+    evidence:
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/Docker_Security_Cheat_Sheet.md
+        doc_sha256: 3442288cd44dda71aed39e82d6abb7d1d6ffb12350ad1a667d8299c2b5488a43
+        anchor: RULE #1 - Do not expose the Docker daemon socket (even to the containers)
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+        quote: |-
+          Docker socket _/var/run/docker.sock_ is the UNIX socket that Docker is listening to. This is the primary entry point for the Docker API. The owner of this socket is root. Giving someone access to it is equivalent to giving unrestricted root access to your host.
+    tags: [docker, docker-compose, conteneurs, privilege-escalation]
+    cwe: ['CWE-250']
+    owasp: ['A05:2021']
+    extracted_at: '2026-08-01'
+    extractor: claude-opus-5
+
+  - id: devops/github-actions/pull-request-target-untrusted-checkout
+    title: Eviter pull_request_target lors de l'extraction de code non approuve
+    category: devops
+    subcategory: github-actions
+    severity: critical
+    confidence: high
+    description: >-
+      Les workflows GitHub Actions declenches par pull_request_target s'executent dans
+      le contexte du depot cible avec acces aux secrets et au GITHUB_TOKEN en ecriture.
+      Ils ne doivent jamais extraire (checkout) ni executer du code provenant de la PR.
+    rationale: >-
+      Si un workflow pull_request_target extrait la branche source d'un fork non approuve
+      et execute des scripts (ex: npm test, build), un attaquant externe peut soumettre
+      une PR pour executer du code arbitraire et voler les secrets de production du depot.
+    remediation: >-
+      Utiliser le declencheur standard 'pull_request' pour les verifications de code non
+      approuve (qui s'execute sans secrets). Reserver pull_request_target uniquement a des
+      actions administratives (triage, labels) sans jamais checkout le code de la PR.
+    context:
+      languages: [yaml]
+      frameworks: [github-actions]
+      project_types: [pipeline, saas, api]
+    detection:
+      - kind: grep
+        pattern: 'pull_request_target'
+        applies_to: ['.github/workflows/*.yml', '.github/workflows/*.yaml']
+        note: Utilisation du declencheur privilegie pull_request_target a risque d'exfiltration.
+    autofix: review
+    vulnerable_example:
+      lang: yaml
+      code: |
+        on: pull_request_target
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+                with:
+                  ref: ${{ github.event.pull_request.head.sha }}
+              - run: npm test
+      explanation: >-
+        Le code de la PR du fork est execute avec acces complet aux secrets du depot cible.
+    fixed_example:
+      lang: yaml
+      code: |
+        on: pull_request
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v4
+              - run: npm test
+      explanation: >-
+        Le workflow standard pull_request s'execute en bac a sable sans secrets de production.
+    evidence:
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.md
+        doc_sha256: 241c43a49aa6853f0a1688efb885f3ced52290771309a3ee403d612f47a81fda
+        anchor: Avoid using the pull_request_target trigger
+        url: https://cheatsheetseries.owasp.org/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.html
+        quote: |-
+          Workflows triggered by `pull_request_target` run in the context of the base (target) repository and have access to the `GITHUB_TOKEN` with `write` permissions and GitHub secrets available to the workflow.
+    tags: [github-actions, ci-cd, devops, supply-chain, secrets]
+    cwe: ['CWE-829']
+    owasp: ['A05:2021']
+    extracted_at: '2026-08-01'
+    extractor: claude-opus-5
+
+  - id: ai-ml/rag/vector-search-post-retrieval-filtering-leak
+    title: Enforcer l'isolation multi-tenant avant la recherche vectorielle (pre-filtrage)
+    category: ai-ml
+    subcategory: rag
+    severity: high
+    confidence: high
+    description: >-
+      Dans les architectures RAG multi-tenant, le filtrage par client/organisation
+      doit etre applique au niveau de la requete vectorielle (pre-filtrage) et non apres
+      recuperation des chunks en memoire (post-filtrage).
+    rationale: >-
+      Le post-filtrage reduit le nombre de resultats exploitables (un tenant peut recevoir
+      0 resultat si le top-K est absorbe par un autre tenant) et risque de divulguer les
+      scores de similarite ou l'existence de documents tiers confidentiels.
+    remediation: >-
+      Toujours inclure le filtre de tenant dans les parametres de requete du vector store
+      (ex: filter={'tenant_id': current_tenant}) avant le calcul de similarite.
+    context:
+      languages: [python, typescript]
+      frameworks: [supabase, langchain, llama-index, pinecone, chromadb]
+      project_types: [ai-rag, saas]
+    detection:
+      - kind: grep
+        pattern: 'similarity_search\s*\([^)]*\)\s*;\s*[^;]*\[\s*(chunk|doc|item)\s+for\s+\w+\s+in\s+[^\]]*tenant'
+        applies_to: ['**/*.py']
+        note: Filtrage post-recuperation suspect sur requete vectorielle.
+    autofix: review
+    vulnerable_example:
+      lang: python
+      code: |
+        docs = vector_store.similarity_search(query, k=10)
+        tenant_docs = [d for d in docs if d.metadata.get("tenant_id") == user_tenant]
+      explanation: >-
+        Si un autre tenant a des documents plus proches de la query, les 10 resultats sont
+        occupes par l'autre tenant et le filtre post-requete renvoie une liste vide.
+    fixed_example:
+      lang: python
+      code: |
+        tenant_docs = vector_store.similarity_search(
+            query,
+            k=10,
+            filter={"tenant_id": user_tenant},
+        )
+      explanation: >-
+        Le moteur vectoriel isole l'espace de recherche au perimetre du tenant appelant.
+    evidence:
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/RAG_Security_Cheat_Sheet.md
+        doc_sha256: e48ca77c8cd69bc9a102facf64cc826a75c9f53253a3eda2e90d45d18ba07d72
+        anchor: "Section 6: Chunk Isolation"
+        url: https://cheatsheetseries.owasp.org/cheatsheets/RAG_Security_Cheat_Sheet.html
+        quote: |-
+          In multi-tenant or multi-classification environments, vector stores must prevent cross-boundary data leakage. A query from one context must not retrieve chunks from another context. This is mandatory for any organization handling multiple clients, departments with different security clearances, or regulated data.
+    tags: [rag, ai-ml, vector, isolation, multi-tenant]
+    cwe: ['CWE-200']
+    owasp: ['A01:2021']
+    extracted_at: '2026-08-01'
+    extractor: claude-opus-5
+

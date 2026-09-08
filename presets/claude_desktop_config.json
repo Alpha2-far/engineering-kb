@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "kb-security": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/Alpha2-far/engineering-kb.git",
+        "kb",
+        "mcp"
+      ]
+    }
+  }
+}

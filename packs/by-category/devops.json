@@ -1,8 +1,85 @@
 {
   "category": "devops",
-  "generated_at": "2026-09-08T10:20:29+00:00",
-  "count": 6,
+  "generated_at": "2026-09-08T10:56:23+00:00",
+  "count": 8,
   "rules": [
+    {
+      "id": "devops/containers/docker-socket-mounted-in-container",
+      "title": "Interdire le montage du socket Docker /var/run/docker.sock dans un conteneur",
+      "category": "devops",
+      "subcategory": "containers",
+      "severity": "critical",
+      "confidence": "high",
+      "description": "Le socket Docker (/var/run/docker.sock) ne doit jamais etre expose ni monte dans un conteneur applicatif, car cela accorde un acces racine complet et sans restriction au demon Docker et a l'hote sous-jacent.",
+      "rationale": "Donner l'acces au socket Unix Docker permet a un attaquant ayant compromis le conteneur de creer d'autres conteneurs avec privileges root, monter le systeme de fichiers racine de l'hote et s'echapper completement de l'isolation du conteneur.",
+      "remediation": "Retirer le volume /var/run/docker.sock des fichiers docker-compose et commandes docker run. Utiliser une API dediee ou un demon isole pour les operations de build.",
+      "context": {
+        "languages": [
+          "yaml"
+        ],
+        "frameworks": [
+          "docker",
+          "docker-compose"
+        ],
+        "platforms": [],
+        "project_types": [
+          "saas",
+          "api",
+          "pipeline",
+          "cli"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "[\"'\\-]?/var/run/docker\\.sock\\s*:\\s*/var/run/docker\\.sock",
+          "applies_to": [
+            "**/docker-compose*.yml",
+            "**/docker-compose*.yaml",
+            "**/compose*.yml",
+            "**/compose*.yaml"
+          ],
+          "note": "Montage dangereux de /var/run/docker.sock dans le conteneur."
+        }
+      ],
+      "autofix": "review",
+      "vulnerable_example": {
+        "lang": "yaml",
+        "code": "services:\n  app:\n    image: myapp:latest\n    volumes:\n      - \"/var/run/docker.sock:/var/run/docker.sock\"\n",
+        "explanation": "Le conteneur applicatif recoit le controle total sur le demon Docker de l'hote."
+      },
+      "fixed_example": {
+        "lang": "yaml",
+        "code": "services:\n  app:\n    image: myapp:latest\n    volumes:\n      - \"app_data:/data\"\nvolumes:\n  app_data:\n",
+        "explanation": "L'application n'a acces qu'a ses volumes dedies, sans toucher au socket demon."
+      },
+      "frameworks": [],
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Docker_Security_Cheat_Sheet.md",
+          "doc_sha256": "3442288cd44dda71aed39e82d6abb7d1d6ffb12350ad1a667d8299c2b5488a43",
+          "quote": "Docker socket _/var/run/docker.sock_ is the UNIX socket that Docker is listening to. This is the primary entry point for the Docker API. The owner of this socket is root. Giving someone access to it is equivalent to giving unrestricted root access to your host.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html",
+          "anchor": "RULE"
+        }
+      ],
+      "tags": [
+        "docker",
+        "docker-compose",
+        "conteneurs",
+        "privilege-escalation"
+      ],
+      "cwe": [
+        "CWE-250"
+      ],
+      "owasp": [
+        "A05:2021"
+      ],
+      "extracted_at": "2026-08-01",
+      "extractor": "claude-opus-5",
+      "ref": "KB-0043"
+    },
     {
       "id": "devops/github-actions/context-interpolated-into-run-block",
       "title": "Passer le contexte GitHub par variable d'environnement, jamais dans run",
@@ -92,7 +169,81 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0043"
+      "ref": "KB-0046"
+    },
+    {
+      "id": "devops/github-actions/pull-request-target-untrusted-checkout",
+      "title": "Eviter pull_request_target lors de l'extraction de code non approuve",
+      "category": "devops",
+      "subcategory": "github-actions",
+      "severity": "critical",
+      "confidence": "high",
+      "description": "Les workflows GitHub Actions declenches par pull_request_target s'executent dans le contexte du depot cible avec acces aux secrets et au GITHUB_TOKEN en ecriture. Ils ne doivent jamais extraire (checkout) ni executer du code provenant de la PR.",
+      "rationale": "Si un workflow pull_request_target extrait la branche source d'un fork non approuve et execute des scripts (ex: npm test, build), un attaquant externe peut soumettre une PR pour executer du code arbitraire et voler les secrets de production du depot.",
+      "remediation": "Utiliser le declencheur standard 'pull_request' pour les verifications de code non approuve (qui s'execute sans secrets). Reserver pull_request_target uniquement a des actions administratives (triage, labels) sans jamais checkout le code de la PR.",
+      "context": {
+        "languages": [
+          "yaml"
+        ],
+        "frameworks": [
+          "github-actions"
+        ],
+        "platforms": [],
+        "project_types": [
+          "pipeline",
+          "saas",
+          "api"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "pull_request_target",
+          "applies_to": [
+            ".github/workflows/*.yml",
+            ".github/workflows/*.yaml"
+          ],
+          "note": "Utilisation du declencheur privilegie pull_request_target a risque d'exfiltration."
+        }
+      ],
+      "autofix": "review",
+      "vulnerable_example": {
+        "lang": "yaml",
+        "code": "on: pull_request_target\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          ref: ${{ github.event.pull_request.head.sha }}\n      - run: npm test\n",
+        "explanation": "Le code de la PR du fork est execute avec acces complet aux secrets du depot cible."
+      },
+      "fixed_example": {
+        "lang": "yaml",
+        "code": "on: pull_request\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: npm test\n",
+        "explanation": "Le workflow standard pull_request s'execute en bac a sable sans secrets de production."
+      },
+      "frameworks": [],
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.md",
+          "doc_sha256": "241c43a49aa6853f0a1688efb885f3ced52290771309a3ee403d612f47a81fda",
+          "quote": "Workflows triggered by `pull_request_target` run in the context of the base (target) repository and have access to the `GITHUB_TOKEN` with `write` permissions and GitHub secrets available to the workflow.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.html",
+          "anchor": "Avoid using the pull_request_target trigger"
+        }
+      ],
+      "tags": [
+        "github-actions",
+        "ci-cd",
+        "devops",
+        "supply-chain",
+        "secrets"
+      ],
+      "cwe": [
+        "CWE-829"
+      ],
+      "owasp": [
+        "A05:2021"
+      ],
+      "extracted_at": "2026-08-01",
+      "extractor": "claude-opus-5",
+      "ref": "KB-0047"
     },
     {
       "id": "devops/secrets/secret-hardcoded-in-source",
@@ -199,7 +350,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0045"
+      "ref": "KB-0049"
     },
     {
       "id": "devops/github-actions/action-not-pinned-to-commit-sha",
@@ -282,7 +433,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0042"
+      "ref": "KB-0045"
     },
     {
       "id": "devops/containers/container-runs-as-root",
@@ -363,7 +514,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0040"
+      "ref": "KB-0042"
     },
     {
       "id": "devops/dependencies/dependencies-not-pinned-to-verified-version",
@@ -439,7 +590,7 @@
       ],
       "extracted_at": "2026-08-10",
       "extractor": "claude-opus-4-6",
-      "ref": "KB-0041"
+      "ref": "KB-0044"
     },
     {
       "id": "devops/github-actions/workflow-permissions-not-restricted",
@@ -510,7 +661,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0044"
+      "ref": "KB-0048"
     }
   ]
 }

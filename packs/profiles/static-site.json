@@ -1,7 +1,7 @@
 {
   "profile": "static-site",
-  "generated_at": "2026-09-08T10:20:29+00:00",
-  "count": 7,
+  "generated_at": "2026-09-08T10:56:23+00:00",
+  "count": 8,
   "rules": [
     {
       "id": "devops/github-actions/context-interpolated-into-run-block",
@@ -92,7 +92,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0043"
+      "ref": "KB-0046"
     },
     {
       "id": "devops/secrets/secret-hardcoded-in-source",
@@ -199,7 +199,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0045"
+      "ref": "KB-0049"
     },
     {
       "id": "ai-ml/output-handling/llm-markdown-rendered-unescaped",
@@ -299,6 +299,93 @@
       "ref": "KB-0008"
     },
     {
+      "id": "authentication/session-management/cookie-missing-samesite-attribute",
+      "title": "Configurer explicitement SameSite=Lax ou Strict sur les cookies de session",
+      "category": "authentication",
+      "subcategory": "session-management",
+      "severity": "high",
+      "confidence": "high",
+      "description": "Tout cookie de session ou d'authentification doit declarer explicitement l'attribut SameSite (Strict ou Lax) afin d'interdire au navigateur d'envoyer le cookie lors de requetes inter-sites non sollicitees et de prevenir les attaques CSRF.",
+      "rationale": "Sans attribut SameSite explicite ou avec SameSite=None, le cookie de session est transmis lors de requetes cross-origin (liens externes, iframes, formulaires tiers), exposant l'application a des falsifications de requetes (CSRF) et a des fuites de donnees d'etat.",
+      "remediation": "Definir samesite='lax' (ou 'strict') lors de la definition du cookie, combine avec httponly=True et secure=True. Ne jamais utiliser samesite='none' sans secure=True.",
+      "context": {
+        "languages": [
+          "python",
+          "typescript",
+          "javascript"
+        ],
+        "frameworks": [
+          "fastapi",
+          "starlette",
+          "express",
+          "nextjs"
+        ],
+        "platforms": [],
+        "project_types": [
+          "saas",
+          "api",
+          "static-site"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "set_cookie\\s*\\([^)]*samesite\\s*=\\s*[\"']none[\"'](?![^)]*secure\\s*=\\s*True)",
+          "applies_to": [
+            "**/*.py"
+          ],
+          "note": "Cookie avec SameSite=None sans Secure=True."
+        },
+        {
+          "kind": "grep",
+          "pattern": "res(ponse)?\\.cookie\\s*\\([^)]*sameSite\\s*:\\s*[\"']none[\"'](?![^)]*secure\\s*:\\s*true)",
+          "applies_to": [
+            "**/*.ts",
+            "**/*.js"
+          ],
+          "note": "Cookie Express/Node avec sameSite=none sans secure=true."
+        }
+      ],
+      "autofix": "review",
+      "vulnerable_example": {
+        "lang": "python",
+        "code": "response.set_cookie(\n    key=\"session_id\",\n    value=token,\n    httponly=True,\n    samesite=\"none\",\n)\n",
+        "explanation": "SameSite=none sans secure permet l'envoi du cookie en requete inter-sites non chiffree."
+      },
+      "fixed_example": {
+        "lang": "python",
+        "code": "response.set_cookie(\n    key=\"session_id\",\n    value=token,\n    httponly=True,\n    secure=True,\n    samesite=\"lax\",\n)\n",
+        "explanation": "Le cookie est protege contre l'injection inter-sites et transmis uniquement sur HTTPS."
+      },
+      "frameworks": [],
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Session_Management_Cheat_Sheet.md",
+          "doc_sha256": "bf6d4c21941abcb844ce884be7f20cf0a884d86c84eb6bd0df3827bcce55e7e2",
+          "quote": "The `SameSite` attribute prevents the browser from sending the cookie on cross-site requests, mitigating cross-origin leakage and providing CSRF defense. Session cookies must explicitly set `SameSite=Strict` (preferred) or `SameSite=Lax`. Never use `SameSite=None` without `Secure`, and do not rely on the browser-default value, which varies across browsers and versions.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html",
+          "anchor": "SameSite Attribute"
+        }
+      ],
+      "tags": [
+        "authentification",
+        "session",
+        "cookies",
+        "samesite",
+        "csrf"
+      ],
+      "cwe": [
+        "CWE-1275"
+      ],
+      "owasp": [
+        "A01:2021"
+      ],
+      "extracted_at": "2026-08-01",
+      "extractor": "claude-opus-5",
+      "ref": "KB-0031"
+    },
+    {
       "id": "devops/github-actions/action-not-pinned-to-commit-sha",
       "title": "Epingler chaque action tierce a un SHA de commit complet",
       "category": "devops",
@@ -379,7 +466,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0042"
+      "ref": "KB-0045"
     },
     {
       "id": "frontend/xss/unsanitized-html-sink",
@@ -477,7 +564,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0046"
+      "ref": "KB-0050"
     },
     {
       "id": "app-security/error-handling/stack-trace-returned-to-client",
@@ -564,7 +651,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0021"
+      "ref": "KB-0022"
     },
     {
       "id": "devops/github-actions/workflow-permissions-not-restricted",
@@ -635,7 +722,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0044"
+      "ref": "KB-0048"
     }
   ]
 }

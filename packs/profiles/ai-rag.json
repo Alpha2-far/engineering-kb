@@ -1,7 +1,7 @@
 {
   "profile": "ai-rag",
-  "generated_at": "2026-09-08T10:20:29+00:00",
-  "count": 42,
+  "generated_at": "2026-09-08T10:56:23+00:00",
+  "count": 43,
   "rules": [
     {
       "id": "ai-ml/output-handling/llm-generated-sql-not-parameterized",
@@ -284,7 +284,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0015"
+      "ref": "KB-0016"
     },
     {
       "id": "app-security/command-injection/user-input-concatenated-into-shell",
@@ -381,7 +381,7 @@
       ],
       "extracted_at": "2026-08-10",
       "extractor": "claude-opus-4-6",
-      "ref": "KB-0018"
+      "ref": "KB-0019"
     },
     {
       "id": "app-security/deserialization/untrusted-data-loaded-with-pickle-or-yaml",
@@ -465,7 +465,7 @@
       "owasp": [],
       "extracted_at": "2026-08-10",
       "extractor": "claude-opus-4-6",
-      "ref": "KB-0020"
+      "ref": "KB-0021"
     },
     {
       "id": "authentication/jwt/algorithm-not-pinned-at-verification",
@@ -567,7 +567,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0027"
+      "ref": "KB-0028"
     },
     {
       "id": "authorization/multi-tenant/tenant-id-taken-from-request",
@@ -656,7 +656,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0031"
+      "ref": "KB-0033"
     },
     {
       "id": "authorization/object-level/missing-ownership-check-on-id",
@@ -754,7 +754,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0032"
+      "ref": "KB-0034"
     },
     {
       "id": "database/rls/service-key-used-outside-server",
@@ -859,7 +859,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0036"
+      "ref": "KB-0038"
     },
     {
       "id": "database/rls/table-in-exposed-schema-without-rls",
@@ -953,7 +953,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0037"
+      "ref": "KB-0039"
     },
     {
       "id": "database/sql-injection/dynamic-query-string-concatenation",
@@ -1060,7 +1060,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0039"
+      "ref": "KB-0041"
     },
     {
       "id": "devops/github-actions/context-interpolated-into-run-block",
@@ -1151,7 +1151,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0043"
+      "ref": "KB-0046"
     },
     {
       "id": "devops/secrets/secret-hardcoded-in-source",
@@ -1258,7 +1258,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0045"
+      "ref": "KB-0049"
     },
     {
       "id": "ai-ml/agency/high-impact-tool-without-human-approval",
@@ -1915,6 +1915,83 @@
       "ref": "KB-0013"
     },
     {
+      "id": "ai-ml/rag/vector-search-post-retrieval-filtering-leak",
+      "title": "Enforcer l'isolation multi-tenant avant la recherche vectorielle (pre-filtrage)",
+      "category": "ai-ml",
+      "subcategory": "rag",
+      "severity": "high",
+      "confidence": "high",
+      "description": "Dans les architectures RAG multi-tenant, le filtrage par client/organisation doit etre applique au niveau de la requete vectorielle (pre-filtrage) et non apres recuperation des chunks en memoire (post-filtrage).",
+      "rationale": "Le post-filtrage reduit le nombre de resultats exploitables (un tenant peut recevoir 0 resultat si le top-K est absorbe par un autre tenant) et risque de divulguer les scores de similarite ou l'existence de documents tiers confidentiels.",
+      "remediation": "Toujours inclure le filtre de tenant dans les parametres de requete du vector store (ex: filter={'tenant_id': current_tenant}) avant le calcul de similarite.",
+      "context": {
+        "languages": [
+          "python",
+          "typescript"
+        ],
+        "frameworks": [
+          "supabase",
+          "langchain",
+          "llama-index",
+          "pinecone",
+          "chromadb"
+        ],
+        "platforms": [],
+        "project_types": [
+          "ai-rag",
+          "saas"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "similarity_search\\s*\\([^)]*\\)\\s*;\\s*[^;]*\\[\\s*(chunk|doc|item)\\s+for\\s+\\w+\\s+in\\s+[^\\]]*tenant",
+          "applies_to": [
+            "**/*.py"
+          ],
+          "note": "Filtrage post-recuperation suspect sur requete vectorielle."
+        }
+      ],
+      "autofix": "review",
+      "vulnerable_example": {
+        "lang": "python",
+        "code": "docs = vector_store.similarity_search(query, k=10)\ntenant_docs = [d for d in docs if d.metadata.get(\"tenant_id\") == user_tenant]\n",
+        "explanation": "Si un autre tenant a des documents plus proches de la query, les 10 resultats sont occupes par l'autre tenant et le filtre post-requete renvoie une liste vide."
+      },
+      "fixed_example": {
+        "lang": "python",
+        "code": "tenant_docs = vector_store.similarity_search(\n    query,\n    k=10,\n    filter={\"tenant_id\": user_tenant},\n)\n",
+        "explanation": "Le moteur vectoriel isole l'espace de recherche au perimetre du tenant appelant."
+      },
+      "frameworks": [],
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/RAG_Security_Cheat_Sheet.md",
+          "doc_sha256": "e48ca77c8cd69bc9a102facf64cc826a75c9f53253a3eda2e90d45d18ba07d72",
+          "quote": "In multi-tenant or multi-classification environments, vector stores must prevent cross-boundary data leakage. A query from one context must not retrieve chunks from another context. This is mandatory for any organization handling multiple clients, departments with different security clearances, or regulated data.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/RAG_Security_Cheat_Sheet.html",
+          "anchor": "Section 6: Chunk Isolation"
+        }
+      ],
+      "tags": [
+        "rag",
+        "ai-ml",
+        "vector",
+        "isolation",
+        "multi-tenant"
+      ],
+      "cwe": [
+        "CWE-200"
+      ],
+      "owasp": [
+        "A01:2021"
+      ],
+      "extracted_at": "2026-08-01",
+      "extractor": "claude-opus-5",
+      "ref": "KB-0015"
+    },
+    {
       "id": "api/mass-assignment/request-body-bound-to-model",
       "title": "Ne pas lier directement le corps de requete au modele persiste",
       "category": "api",
@@ -2016,7 +2093,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0016"
+      "ref": "KB-0017"
     },
     {
       "id": "app-security/file-upload/extension-and-type-not-validated",
@@ -2119,7 +2196,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0022"
+      "ref": "KB-0023"
     },
     {
       "id": "app-security/logging/secrets-written-to-logs",
@@ -2211,7 +2288,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0023"
+      "ref": "KB-0024"
     },
     {
       "id": "authentication/jwt/hmac-secret-too-short",
@@ -2303,7 +2380,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0028"
+      "ref": "KB-0029"
     },
     {
       "id": "data-protection/pii/content-sent-to-provider-without-redaction",
@@ -2386,7 +2463,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0033"
+      "ref": "KB-0035"
     },
     {
       "id": "database/rls/security-definer-function-in-exposed-schema",
@@ -2481,7 +2558,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0035"
+      "ref": "KB-0037"
     },
     {
       "id": "database/rls/view-bypasses-underlying-policies",
@@ -2565,7 +2642,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0038"
+      "ref": "KB-0040"
     },
     {
       "id": "devops/github-actions/action-not-pinned-to-commit-sha",
@@ -2648,7 +2725,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0042"
+      "ref": "KB-0045"
     },
     {
       "id": "frontend/xss/unsanitized-html-sink",
@@ -2746,7 +2823,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0046"
+      "ref": "KB-0050"
     },
     {
       "id": "network/ssrf/outbound-url-not-allowlisted",
@@ -2835,7 +2912,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0047"
+      "ref": "KB-0051"
     },
     {
       "id": "ai-ml/agency/open-ended-tool-exposed-to-model",
@@ -3267,7 +3344,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0021"
+      "ref": "KB-0022"
     },
     {
       "id": "authentication/enumeration/login-reveals-account-existence",
@@ -3351,7 +3428,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0026"
+      "ref": "KB-0027"
     },
     {
       "id": "authentication/timing/secret-compared-with-equality-operator",
@@ -3448,7 +3525,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0030"
+      "ref": "KB-0032"
     },
     {
       "id": "database/rls/auth-schema-exposed-instead-of-profile-table",
@@ -3521,7 +3598,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0034"
+      "ref": "KB-0036"
     },
     {
       "id": "devops/containers/container-runs-as-root",
@@ -3602,7 +3679,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0040"
+      "ref": "KB-0042"
     },
     {
       "id": "devops/dependencies/dependencies-not-pinned-to-verified-version",
@@ -3678,7 +3755,7 @@
       ],
       "extracted_at": "2026-08-10",
       "extractor": "claude-opus-4-6",
-      "ref": "KB-0041"
+      "ref": "KB-0044"
     },
     {
       "id": "devops/github-actions/workflow-permissions-not-restricted",
@@ -3749,7 +3826,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0044"
+      "ref": "KB-0048"
     }
   ]
 }

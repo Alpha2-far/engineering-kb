@@ -123,36 +123,48 @@ def resolve_security_topic(query: str) -> dict[str, Any]:
     name="get_security_rules",
     description=(
         "Retourne les fiches de sécurité compactes et les patterns concrets Do / Don't "
-        "pour un topic ou une requête technique, ainsi qu'un bloc Markdown prêt à injecter."
+        "pour un topic, une liste d'identifiants de règles (rule_ids) ou une requête technique, "
+        "ainsi qu'un bloc Markdown prêt à injecter."
     ),
 )
-def get_security_rules(topic: str, max_rules: int = 5) -> dict[str, Any]:
+def get_security_rules(
+    topic: str = "",
+    rule_ids: list[str] | None = None,
+    max_rules: int = 5,
+) -> dict[str, Any]:
     """Injecte les fiches de règles enrichies avec code vulnérable (Don't) et code sécurisé (Do)."""
     engine = get_search_engine()
     topic_clean = topic.strip()
-    if not topic_clean:
-        return {
-            "topic": topic,
-            "count": 0,
-            "rules": [],
-            "markdown": "Aucune règle demandée (requête vide).",
-        }
-
-    # 1. Est-ce un slug de topic exact ?
-    matched_topic = next((t for t in engine.topics if t.slug == topic_clean), None)
     rules_to_return = []
     search_results: list[SearchResult] = []
 
-    if matched_topic:
-        for rid in matched_topic.rule_ids[:max_rules]:
+    if rule_ids:
+        for rid in rule_ids[:max_rules]:
             if rid in engine.rule_by_id:
                 rule = engine.rule_by_id[rid]
                 rules_to_return.append(rule)
-                search_results.append(SearchResult(rule=rule, score=10.0, topic=matched_topic))
+                search_results.append(SearchResult(rule=rule, score=10.0))
+    elif topic_clean:
+        # 1. Est-ce un slug de topic exact ?
+        matched_topic = next((t for t in engine.topics if t.slug == topic_clean), None)
+        if matched_topic:
+            for rid in matched_topic.rule_ids[:max_rules]:
+                if rid in engine.rule_by_id:
+                    rule = engine.rule_by_id[rid]
+                    rules_to_return.append(rule)
+                    search_results.append(SearchResult(rule=rule, score=10.0, topic=matched_topic))
+        else:
+            # Recherche par mot-clé / intention
+            search_results = engine.search(topic_clean, limit=max_rules)
+            rules_to_return = [res.rule for res in search_results]
     else:
-        # Recherche par mot-clé / intention
-        search_results = engine.search(topic_clean, limit=max_rules)
-        rules_to_return = [res.rule for res in search_results]
+        return {
+            "topic": topic,
+            "count": 0,
+            "rules_count": 0,
+            "rules": [],
+            "markdown": "Aucune règle demandée (requête vide).",
+        }
 
     markdown = format_for_agent(search_results)
     cards = [r.to_agent_card() for r in rules_to_return]
@@ -160,6 +172,7 @@ def get_security_rules(topic: str, max_rules: int = 5) -> dict[str, Any]:
     return {
         "topic": topic,
         "count": len(cards),
+        "rules_count": len(cards),
         "rules": cards,
         "markdown": markdown,
     }

@@ -1,31 +1,31 @@
 {
   "summary": {
     "files_seen": 4,
-    "submitted": 47,
-    "accepted": 47,
+    "submitted": 51,
+    "accepted": 51,
     "rejected": 0,
     "rejected_by_stage": {},
     "near_duplicates": 0,
     "stale_docs": 0,
     "by_category": {
       "app-security": 9,
-      "devops": 6,
+      "devops": 8,
       "database": 6,
-      "authentication": 5,
+      "authentication": 6,
       "authorization": 2,
       "api": 1,
       "frontend": 1,
       "network": 1,
-      "ai-ml": 15,
+      "ai-ml": 16,
       "data-protection": 1
     },
     "by_severity": {
-      "critical": 14,
-      "high": 21,
+      "critical": 16,
+      "high": 23,
       "medium": 12
     },
     "by_confidence": {
-      "high": 45,
+      "high": 49,
       "medium": 2
     }
   },

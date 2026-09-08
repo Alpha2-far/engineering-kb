@@ -1,6 +1,6 @@
 {
   "category": "authorization",
-  "generated_at": "2026-09-08T10:20:29+00:00",
+  "generated_at": "2026-09-08T10:56:23+00:00",
   "count": 2,
   "rules": [
     {
@@ -90,7 +90,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0031"
+      "ref": "KB-0033"
     },
     {
       "id": "authorization/object-level/missing-ownership-check-on-id",
@@ -188,7 +188,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0032"
+      "ref": "KB-0034"
     }
   ]
 }

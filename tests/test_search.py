@@ -43,10 +43,11 @@ def test_search_docker_root():
     """Une recherche 'docker container root' remonte la règle container-runs-as-root."""
     results = search_rules("docker container root", limit=3)
     assert len(results) > 0
-    top = results[0]
-    assert top.rule.id == "devops/containers/container-runs-as-root"
-    assert top.rule.severity == Severity.MEDIUM
-    assert "USER" in top.rule.title or "Docker" in top.rule.title
+    rule_ids = [r.rule.id for r in results]
+    assert "devops/containers/container-runs-as-root" in rule_ids
+    container_rule = next(r.rule for r in results if r.rule.id == "devops/containers/container-runs-as-root")
+    assert container_rule.severity == Severity.MEDIUM
+    assert "USER" in container_rule.title or "Docker" in container_rule.title
 
 
 def test_search_rag_tenant_isolation():

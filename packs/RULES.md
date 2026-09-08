@@ -1,6 +1,6 @@
 # Regles compilees — Knowledge Base d'ingenierie
 
-> Genere le 2026-09-08 — 47 regles. **Ne pas editer a la main** :
+> Genere le 2026-09-08 — 51 regles. **Ne pas editer a la main** :
 > ce fichier est produit par `uv run kb compile`. Corriger la source dans `kb/rules/`.
 
 Chaque regle porte une citation verifiee dans un document officiel archive.
@@ -29,7 +29,7 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 - **detection** : `grep:(?i)\b(eval|exec)\s*\(|os\.system\s*\(|subprocess\.(run|call|Popen|check_output)\s*\([^)]*shell\s*=\s*True`; `grep:\b(eval|new\s+Function)\s*\(|child_process\.(exec|execSync)\s*\(`
 - **source** : [owasp-llm-top10](https://github.com/OWASP/www-project-top-10-for-large-language-model-applications/blob/020595761a4b7b0c3f9cf01a0457b78f9f1e7f9c/2_0_vulns/LLM05_ImproperOutputHandling.md), [owasp-llm-top10](https://github.com/OWASP/www-project-top-10-for-large-language-model-applications/blob/020595761a4b7b0c3f9cf01a0457b78f9f1e7f9c/2_0_vulns/LLM05_ImproperOutputHandling.md) · confiance high
 
-### `KB-0015` · CRITICAL · Filtrer la recherche vectorielle par tenant avant le calcul de similarite
+### `KB-0016` · CRITICAL · Filtrer la recherche vectorielle par tenant avant le calcul de similarite
 
 - **id** : `ai-ml/rag/vector-search-without-tenant-filter`
 - **exige** : Toute requete de similarite sur une base vectorielle partagee doit porter un filtre d'appartenance (tenant, organisation, utilisateur) applique cote base, et non un tri des resultats apres coup.
@@ -42,7 +42,7 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 
 ## app-security
 
-### `KB-0018` · CRITICAL · Ne jamais construire une commande shell par concatenation d'entree utilisateur
+### `KB-0019` · CRITICAL · Ne jamais construire une commande shell par concatenation d'entree utilisateur
 
 - **id** : `app-security/command-injection/user-input-concatenated-into-shell`
 - **exige** : Un CLI qui compose une commande systeme en concatenant un argument recu (argv, stdin, variable d'environnement) doit passer par une API qui separe le programme de ses arguments, sans shell intermediaire.
@@ -55,7 +55,7 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 - **detection** : `grep:shell\s*=\s*True`; `grep:os\.(system|popen)\s*\(`; `grep:child_process\.exec\s*\(`
 - **source** : [owasp-cheatsheets](https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html), [owasp-cheatsheets](https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html) · confiance high
 
-### `KB-0020` · CRITICAL · Ne jamais deserialiser un fichier local avec pickle ou yaml.load
+### `KB-0021` · CRITICAL · Ne jamais deserialiser un fichier local avec pickle ou yaml.load
 
 - **id** : `app-security/deserialization/untrusted-data-loaded-with-pickle-or-yaml`
 - **exige** : Un CLI qui lit un cache, un etat ou une configuration depuis le disque doit utiliser un format de donnees inerte (JSON, `yaml.safe_load`), jamais `pickle.load` ni `yaml.load` sans chargeur sur.
@@ -71,7 +71,7 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 
 ## authentication
 
-### `KB-0027` · CRITICAL · Imposer l'algorithme attendu a la verification d'un JWT
+### `KB-0028` · CRITICAL · Imposer l'algorithme attendu a la verification d'un JWT
 
 - **id** : `authentication/jwt/algorithm-not-pinned-at-verification`
 - **exige** : La verification d'un JWT doit exiger explicitement l'algorithme attendu, au lieu de se fier a l'en-tete alg du jeton presente.
@@ -81,7 +81,7 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 - **detection** : `grep:(?i)jwt\.decode\s*\([^)]*verify_signature\s*:\s*False|jwt\.decode\s*\([^)]*options\s*=\s*\{[^}]*verify[^}]*False`; `grep:(?i)(jwt\.decode|jwtVerify|verify)\s*\(\s*\w+\s*,\s*\w+\s*\)`; `grep:(?i)["']alg["']\s*:\s*["']none["']|algorithms\s*=\s*\[[^\]]*none`
 - **source** : [owasp-cheatsheets](https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_Cheat_Sheet.html), [owasp-cheatsheets](https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_Cheat_Sheet.html) · confiance high
 
-### `KB-0029` · CRITICAL · Hacher les mots de passe avec Argon2id, scrypt, bcrypt ou PBKDF2
+### `KB-0030` · CRITICAL · Hacher les mots de passe avec Argon2id, scrypt, bcrypt ou PBKDF2
 
 - **id** : `authentication/password-storage/fast-hash-used-for-passwords`
 - **exige** : Un mot de passe doit etre hache avec un algorithme lent et parametrable (Argon2id en premier choix, sinon scrypt, bcrypt ou PBKDF2), avec un sel unique par mot de passe. Ni stockage en clair, ni chiffrement reversible, ni fonction de hachage rapide de la famille SHA ou MD5.
@@ -94,7 +94,7 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 
 ## authorization
 
-### `KB-0031` · CRITICAL · Deriver le locataire de la session authentifiee, jamais de la requete
+### `KB-0033` · CRITICAL · Deriver le locataire de la session authentifiee, jamais de la requete
 
 - **id** : `authorization/multi-tenant/tenant-id-taken-from-request`
 - **exige** : L'identifiant de locataire qui sert a filtrer les donnees doit etre lu dans la session ou le jeton verifie, jamais dans un en-tete, un parametre de requete ou un champ du corps fourni par le client.
@@ -104,7 +104,7 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 - **detection** : `grep:(?i)(headers|query_params|args|params|body|cookies)[\.\[]\s*["']?[xX]?-?(tenant|org|organisation|organization|account|workspace)[_-]?id`
 - **source** : [owasp-cheatsheets](https://cheatsheetseries.owasp.org/cheatsheets/Multi_Tenant_Security_Cheat_Sheet.html), [owasp-cheatsheets](https://cheatsheetseries.owasp.org/cheatsheets/Multi_Tenant_Security_Cheat_Sheet.html) · confiance high
 
-### `KB-0032` · CRITICAL · Verifier la propriete de l'objet a chaque acces par identifiant
+### `KB-0034` · CRITICAL · Verifier la propriete de l'objet a chaque acces par identifiant
 
 - **id** : `authorization/object-level/missing-ownership-check-on-id`
 - **exige** : Toute route qui recoit un identifiant d'objet doit verifier, cote serveur, que l'utilisateur authentifie a le droit d'acceder a cet objet precis, avant de le lire ou de le modifier.
@@ -117,7 +117,7 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 
 ## database
 
-### `KB-0036` · CRITICAL · Ne jamais exposer la cle de service au navigateur
+### `KB-0038` · CRITICAL · Ne jamais exposer la cle de service au navigateur
 
 - **id** : `database/rls/service-key-used-outside-server`
 - **exige** : La cle de service Supabase, qui contourne RLS, ne doit apparaitre ni dans du code client, ni dans une variable d'environnement prefixee pour le navigateur. Elle reste sur le serveur, pour des taches d'administration.
@@ -127,7 +127,7 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 - **detection** : `grep:(?i)(NEXT_PUBLIC|VITE|REACT_APP|PUBLIC|EXPO_PUBLIC)_[A-Z_]*(SERVICE_ROLE|SERVICE_KEY|SECRET)`; `grep:(?i)service_role`
 - **source** : [supabase](https://supabase.com/docs/guides/database/postgres/row-level-security), [supabase](https://supabase.com/docs/guides/database/postgres/row-level-security) · confiance high
 
-### `KB-0037` · CRITICAL · Activer RLS sur toute table d'un schema expose par l'API
+### `KB-0039` · CRITICAL · Activer RLS sur toute table d'un schema expose par l'API
 
 - **id** : `database/rls/table-in-exposed-schema-without-rls`
 - **exige** : Toute table creee dans un schema expose par l'API — le schema public par defaut — doit avoir la securite au niveau des lignes activee, et les privileges accordes role par role.
@@ -137,7 +137,7 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 - **detection** : `grep:(?i)create\s+table\s+(if\s+not\s+exists\s+)?(public\.)?[\w"]+`; `absent:(?i)enable\s+row\s+level\s+security`
 - **source** : [supabase](https://supabase.com/docs/guides/database/postgres/row-level-security), [supabase](https://supabase.com/docs/guides/database/postgres/row-level-security) · confiance high
 
-### `KB-0039` · CRITICAL · Parametrer les requetes SQL au lieu de concatener les entrees
+### `KB-0041` · CRITICAL · Parametrer les requetes SQL au lieu de concatener les entrees
 
 - **id** : `database/sql-injection/dynamic-query-string-concatenation`
 - **exige** : Toute requete SQL doit etre construite avec des parametres lies : le code SQL est defini d'abord, les valeurs sont passees ensuite. Aucune donnee externe ne doit etre inseree par concatenation, f-string ou formatage de chaine.
@@ -150,7 +150,17 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 
 ## devops
 
-### `KB-0043` · CRITICAL · Passer le contexte GitHub par variable d'environnement, jamais dans run
+### `KB-0043` · CRITICAL · Interdire le montage du socket Docker /var/run/docker.sock dans un conteneur
+
+- **id** : `devops/containers/docker-socket-mounted-in-container`
+- **exige** : Le socket Docker (/var/run/docker.sock) ne doit jamais etre expose ni monte dans un conteneur applicatif, car cela accorde un acces racine complet et sans restriction au demon Docker et a l'hote sous-jacent.
+- **pourquoi** : Donner l'acces au socket Unix Docker permet a un attaquant ayant compromis le conteneur de creer d'autres conteneurs avec privileges root, monter le systeme de fichiers racine de l'hote et s'echapper completement de l'isolation du conteneur.
+- **correction** : Retirer le volume /var/run/docker.sock des fichiers docker-compose et commandes docker run. Utiliser une API dediee ou un demon isole pour les operations de build.
+- **portee** : yaml, docker, docker-compose
+- **detection** : `grep:["'\-]?/var/run/docker\.sock\s*:\s*/var/run/docker\.sock`
+- **source** : [owasp-cheatsheets](https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html) · confiance high
+
+### `KB-0046` · CRITICAL · Passer le contexte GitHub par variable d'environnement, jamais dans run
 
 - **id** : `devops/github-actions/context-interpolated-into-run-block`
 - **exige** : Une expression de contexte GitHub ne doit pas etre interpolee directement dans un bloc run : la valeur transite par une variable d'environnement intermediaire, qui est ensuite referencee dans le script.
@@ -160,7 +170,17 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 - **detection** : `grep:\$\{\{\s*(github|inputs|env)\.[^}]*(title|body|message|name|label|ref|head_ref|email|description)[^}]*\}\}`; `grep:pull_request_target`
 - **source** : [owasp-cheatsheets](https://cheatsheetseries.owasp.org/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.html), [owasp-cheatsheets](https://cheatsheetseries.owasp.org/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.html) · confiance high
 
-### `KB-0045` · CRITICAL · Ne jamais ecrire un secret dans le code ou un fichier de configuration suivi
+### `KB-0047` · CRITICAL · Eviter pull_request_target lors de l'extraction de code non approuve
+
+- **id** : `devops/github-actions/pull-request-target-untrusted-checkout`
+- **exige** : Les workflows GitHub Actions declenches par pull_request_target s'executent dans le contexte du depot cible avec acces aux secrets et au GITHUB_TOKEN en ecriture. Ils ne doivent jamais extraire (checkout) ni executer du code provenant de la PR.
+- **pourquoi** : Si un workflow pull_request_target extrait la branche source d'un fork non approuve et execute des scripts (ex: npm test, build), un attaquant externe peut soumettre une PR pour executer du code arbitraire et voler les secrets de production du depot.
+- **correction** : Utiliser le declencheur standard 'pull_request' pour les verifications de code non approuve (qui s'execute sans secrets). Reserver pull_request_target uniquement a des actions administratives (triage, labels) sans jamais checkout le code de la PR.
+- **portee** : yaml, github-actions
+- **detection** : `grep:pull_request_target`
+- **source** : [owasp-cheatsheets](https://cheatsheetseries.owasp.org/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.html) · confiance high
+
+### `KB-0049` · CRITICAL · Ne jamais ecrire un secret dans le code ou un fichier de configuration suivi
 
 - **id** : `devops/secrets/secret-hardcoded-in-source`
 - **exige** : Cles d'API, identifiants de base, jetons et cles privees ne doivent figurer ni dans le code source, ni dans un fichier de configuration versionne, ni dans une instruction ENV ou ARG d'image Docker.
@@ -243,10 +263,20 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 - **detection** : `grep:(?i)(pypdf|PdfReader|pdfplumber|fitz\.open|extract_text|docx2txt|UnstructuredFileLoader|mammoth)`; `absent:(?i)(sanitiz|validate_document|hidden_text|suspicious|quarantine)`
 - **source** : [owasp-llm-top10](https://github.com/OWASP/www-project-top-10-for-large-language-model-applications/blob/020595761a4b7b0c3f9cf01a0457b78f9f1e7f9c/2_0_vulns/LLM08_VectorAndEmbeddingWeaknesses.md), [owasp-llm-top10](https://github.com/OWASP/www-project-top-10-for-large-language-model-applications/blob/020595761a4b7b0c3f9cf01a0457b78f9f1e7f9c/2_0_vulns/LLM08_VectorAndEmbeddingWeaknesses.md) · confiance high
 
+### `KB-0015` · HIGH · Enforcer l'isolation multi-tenant avant la recherche vectorielle (pre-filtrage)
+
+- **id** : `ai-ml/rag/vector-search-post-retrieval-filtering-leak`
+- **exige** : Dans les architectures RAG multi-tenant, le filtrage par client/organisation doit etre applique au niveau de la requete vectorielle (pre-filtrage) et non apres recuperation des chunks en memoire (post-filtrage).
+- **pourquoi** : Le post-filtrage reduit le nombre de resultats exploitables (un tenant peut recevoir 0 resultat si le top-K est absorbe par un autre tenant) et risque de divulguer les scores de similarite ou l'existence de documents tiers confidentiels.
+- **correction** : Toujours inclure le filtre de tenant dans les parametres de requete du vector store (ex: filter={'tenant_id': current_tenant}) avant le calcul de similarite.
+- **portee** : python, typescript, supabase, langchain, llama-index, pinecone, chromadb
+- **detection** : `grep:similarity_search\s*\([^)]*\)\s*;\s*[^;]*\[\s*(chunk|doc|item)\s+for\s+\w+\s+in\s+[^\]]*tenant`
+- **source** : [owasp-cheatsheets](https://cheatsheetseries.owasp.org/cheatsheets/RAG_Security_Cheat_Sheet.html) · confiance high
+
 
 ## api
 
-### `KB-0016` · HIGH · Ne pas lier directement le corps de requete au modele persiste
+### `KB-0017` · HIGH · Ne pas lier directement le corps de requete au modele persiste
 
 - **id** : `api/mass-assignment/request-body-bound-to-model`
 - **exige** : Le corps d'une requete ne doit pas etre affecte en bloc a l'objet persiste : la couche d'entree declare explicitement les champs modifiables, et les attributs sensibles n'y figurent pas.
@@ -259,7 +289,7 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 
 ## app-security
 
-### `KB-0017` · HIGH · Coder en dur l'executable appele plutot que de le lire depuis l'entree
+### `KB-0018` · HIGH · Coder en dur l'executable appele plutot que de le lire depuis l'entree
 
 - **id** : `app-security/command-injection/executable-chosen-by-user-input`
 - **exige** : Le nom du programme lance par un CLI doit etre fixe dans le code ou resolu contre une liste d'autorisation explicite, jamais compose a partir d'un argument, d'une variable d'environnement ou d'un fichier de config.
@@ -272,7 +302,7 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 - **detection** : `grep:subprocess\.(run|Popen|call)\s*\(\s*(args\.|os\.environ|sys\.argv|config\[)`
 - **source** : [owasp-cheatsheets](https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html), [owasp-cheatsheets](https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html) · confiance high
 
-### `KB-0019` · HIGH · Terminer les options par -- avant toute valeur fournie par l'utilisateur
+### `KB-0020` · HIGH · Terminer les options par -- avant toute valeur fournie par l'utilisateur
 
 - **id** : `app-security/command-injection/user-input-passed-as-command-option`
 - **exige** : Meme sans shell, une valeur utilisateur placee sur une ligne de commande doit etre separee des options par le delimiteur `--`, sinon une valeur qui commence par `-` est interpretee comme un drapeau du programme appele.
@@ -285,7 +315,7 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 - **detection** : `grep:subprocess\.(run|call|check_output|Popen)\s*\(\s*\[[^\]]*(args|argv|sys\.argv|input|user)`
 - **source** : [owasp-cheatsheets](https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html), [owasp-cheatsheets](https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html) · confiance high
 
-### `KB-0022` · HIGH · Valider extension et type reel d'un fichier televerse, et le renommer
+### `KB-0023` · HIGH · Valider extension et type reel d'un fichier televerse, et le renommer
 
 - **id** : `app-security/file-upload/extension-and-type-not-validated`
 - **exige** : Un fichier televerse doit etre accepte sur liste d'extensions autorisees, voir son type reel controle sans se fier a l'en-tete Content-Type, etre renomme par l'application, et etre stocke hors de la racine web.
@@ -295,7 +325,7 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 - **detection** : `grep:(?i)\.(filename|originalname|content_type|mimetype)\b`; `absent:(?i)(ALLOWED_EXTENSIONS|allowed_types|allowlist|uuid4|token_hex|randomUUID|magic|filetype|imghdr)`
 - **source** : [owasp-cheatsheets](https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html), [owasp-cheatsheets](https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html), [owasp-cheatsheets](https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html) · confiance high
 
-### `KB-0023` · HIGH · Exclure secrets et donnees sensibles des journaux
+### `KB-0024` · HIGH · Exclure secrets et donnees sensibles des journaux
 
 - **id** : `app-security/logging/secrets-written-to-logs`
 - **exige** : Les journaux ne doivent contenir ni mot de passe, ni jeton d'acces, ni identifiant de session, ni chaine de connexion, ni cle de chiffrement, ni donnee personnelle sensible : ces valeurs sont retirees, masquees ou hachees avant ecriture.
@@ -305,7 +335,7 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 - **detection** : `grep:(?i)(logger|log|console)\.(debug|info|warn|warning|error)\s*\([^)]{0,120}\b(password|passwd|secret|token|api_key|apikey|authorization|credential|connection_string)\b`; `grep:(?i)(logger|log|console)\.(debug|info|warn|warning|error)\s*\(\s*[^)]{0,40}\b(request|req|payload|body|headers|event)\s*\)`
 - **source** : [owasp-cheatsheets](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html), [owasp-cheatsheets](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html) · confiance high
 
-### `KB-0024` · HIGH · Confiner tout chemin de fichier construit a partir d'une entree utilisateur
+### `KB-0025` · HIGH · Confiner tout chemin de fichier construit a partir d'une entree utilisateur
 
 - **id** : `app-security/path-traversal/user-controlled-path-not-confined`
 - **exige** : Un chemin bati a partir d'un argument ou d'un nom de fichier fourni doit etre resolu en chemin canonique puis verifie comme etant sous un repertoire de base autorise, avant toute lecture ou ecriture.
@@ -318,7 +348,7 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 - **detection** : `grep:os\.path\.join\s*\([^)]*(args\.|sys\.argv|input\(|request\.)`; `grep:open\s*\(\s*(args\.|sys\.argv)`
 - **source** : [owasp-asvs](https://github.com/OWASP/ASVS/blob/master/5.0/en/0x14-V5-File-Handling.md), [owasp-cheatsheets](https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html) · confiance high
 
-### `KB-0025` · HIGH · Ne jamais recevoir un secret par argument de ligne de commande
+### `KB-0026` · HIGH · Ne jamais recevoir un secret par argument de ligne de commande
 
 - **id** : `app-security/secrets/secret-passed-as-command-line-argument`
 - **exige** : Un CLI ne doit pas accepter cle d'API, mot de passe ou jeton via une option de ligne de commande. Il les lit depuis un fichier a permissions restreintes, l'entree standard, ou un gestionnaire de secrets.
@@ -334,7 +364,7 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 
 ## authentication
 
-### `KB-0028` · HIGH · Utiliser un secret HMAC long et aleatoire pour signer les JWT
+### `KB-0029` · HIGH · Utiliser un secret HMAC long et aleatoire pour signer les JWT
 
 - **id** : `authentication/jwt/hmac-secret-too-short`
 - **exige** : Le secret utilise pour signer un JWT en HMAC doit compter au moins 64 caracteres issus d'une source d'alea sure, etre unique par environnement, et ne jamais figurer dans le code ni avoir de valeur de repli.
@@ -344,10 +374,20 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 - **detection** : `grep:(?i)(jwt_secret|secret_key|JWT_SECRET|SECRET_KEY)\s*[:=]\s*["'][^"']{0,63}["']`; `grep:(?i)(getenv|environ\.get|process\.env\.\w*SECRET\w*)[^)\n]{0,60}(,\s*["'][^"']+["']|\|\|\s*["'])`
 - **source** : [owasp-cheatsheets](https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_Cheat_Sheet.html), [owasp-cheatsheets](https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_Cheat_Sheet.html) · confiance high
 
+### `KB-0031` · HIGH · Configurer explicitement SameSite=Lax ou Strict sur les cookies de session
+
+- **id** : `authentication/session-management/cookie-missing-samesite-attribute`
+- **exige** : Tout cookie de session ou d'authentification doit declarer explicitement l'attribut SameSite (Strict ou Lax) afin d'interdire au navigateur d'envoyer le cookie lors de requetes inter-sites non sollicitees et de prevenir les attaques CSRF.
+- **pourquoi** : Sans attribut SameSite explicite ou avec SameSite=None, le cookie de session est transmis lors de requetes cross-origin (liens externes, iframes, formulaires tiers), exposant l'application a des falsifications de requetes (CSRF) et a des fuites de donnees d'etat.
+- **correction** : Definir samesite='lax' (ou 'strict') lors de la definition du cookie, combine avec httponly=True et secure=True. Ne jamais utiliser samesite='none' sans secure=True.
+- **portee** : python, typescript, javascript, fastapi, starlette, express, nextjs
+- **detection** : `grep:set_cookie\s*\([^)]*samesite\s*=\s*["']none["'](?![^)]*secure\s*=\s*True)`; `grep:res(ponse)?\.cookie\s*\([^)]*sameSite\s*:\s*["']none["'](?![^)]*secure\s*:\s*true)`
+- **source** : [owasp-cheatsheets](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html) · confiance high
+
 
 ## data-protection
 
-### `KB-0033` · HIGH · Rediger les donnees sensibles avant tout envoi a un fournisseur externe
+### `KB-0035` · HIGH · Rediger les donnees sensibles avant tout envoi a un fournisseur externe
 
 - **id** : `data-protection/pii/content-sent-to-provider-without-redaction`
 - **exige** : Avant d'envoyer du contenu client a un fournisseur d'inference tiers, les elements identifiants et confidentiels qui ne sont pas necessaires a la tache doivent etre detectes et remplaces par des jetons reversibles cote application.
@@ -360,7 +400,7 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 
 ## database
 
-### `KB-0035` · HIGH · Garder les fonctions security definer hors des schemas exposes
+### `KB-0037` · HIGH · Garder les fonctions security definer hors des schemas exposes
 
 - **id** : `database/rls/security-definer-function-in-exposed-schema`
 - **exige** : Une fonction declaree security definer ne doit jamais etre creee dans un schema expose par l'API : elle appartient a un schema prive, appele uniquement depuis les politiques.
@@ -370,7 +410,7 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 - **detection** : `grep:(?i)create\s+(or\s+replace\s+)?function\s+public\.`; `grep:(?i)security\s+definer(?![\s\S]{0,80}set\s+search_path)`
 - **source** : [supabase](https://supabase.com/docs/guides/database/postgres/row-level-security), [supabase](https://supabase.com/docs/guides/database/postgres/row-level-security) · confiance high
 
-### `KB-0038` · HIGH · Declarer security_invoker sur les vues d'un schema expose
+### `KB-0040` · HIGH · Declarer security_invoker sur les vues d'un schema expose
 
 - **id** : `database/rls/view-bypasses-underlying-policies`
 - **exige** : Une vue creee dans un schema expose contourne par defaut les politiques RLS des tables sous-jacentes : elle doit etre declaree avec security_invoker, ou son acces revoque pour les roles publics.
@@ -383,7 +423,7 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 
 ## devops
 
-### `KB-0042` · HIGH · Epingler chaque action tierce a un SHA de commit complet
+### `KB-0045` · HIGH · Epingler chaque action tierce a un SHA de commit complet
 
 - **id** : `devops/github-actions/action-not-pinned-to-commit-sha`
 - **exige** : Les actions et workflows reutilisables tiers doivent etre references par un SHA de commit complet, jamais par une etiquette de version ni par un nom de branche.
@@ -396,7 +436,7 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 
 ## frontend
 
-### `KB-0046` · HIGH · Ne pas ecrire de variable dans un puits HTML sans assainissement
+### `KB-0050` · HIGH · Ne pas ecrire de variable dans un puits HTML sans assainissement
 
 - **id** : `frontend/xss/unsanitized-html-sink`
 - **exige** : Les points d'ecriture directe dans le DOM (innerHTML, dangerouslySetInnerHTML, v-html) ne doivent pas recevoir de valeur dynamique sans assainissement prealable par une bibliotheque dediee.
@@ -409,7 +449,7 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 
 ## network
 
-### `KB-0047` · HIGH · Restreindre les requetes sortantes a une liste d'hotes autorisee
+### `KB-0051` · HIGH · Restreindre les requetes sortantes a une liste d'hotes autorisee
 
 - **id** : `network/ssrf/outbound-url-not-allowlisted`
 - **exige** : Quand l'application effectue une requete vers une URL derivee d'une entree externe, l'hote doit etre valide contre une liste d'autorisation ; une liste d'interdiction ne suffit pas.
@@ -475,7 +515,7 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 
 ## app-security
 
-### `KB-0021` · MEDIUM · Renvoyer une reponse d'erreur generique et journaliser le detail cote serveur
+### `KB-0022` · MEDIUM · Renvoyer une reponse d'erreur generique et journaliser le detail cote serveur
 
 - **id** : `app-security/error-handling/stack-trace-returned-to-client`
 - **exige** : Une erreur inattendue doit produire une reponse generique pour l'appelant, tandis que la trace complete est journalisee cote serveur. Aucun message d'exception, chemin de fichier, requete SQL ni version de composant ne doit figurer dans la reponse.
@@ -488,7 +528,7 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 
 ## authentication
 
-### `KB-0026` · MEDIUM · Ne pas laisser l'echec d'authentification reveler l'existence du compte
+### `KB-0027` · MEDIUM · Ne pas laisser l'echec d'authentification reveler l'existence du compte
 
 - **id** : `authentication/enumeration/login-reveals-account-existence`
 - **exige** : Un echec d'authentification doit produire la meme reponse et la meme duree, que l'identifiant existe ou non : message identique, code identique, et verification d'un condensat factice quand le compte est absent.
@@ -498,7 +538,7 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 - **detection** : `grep:(?i)(detail|message|error)\s*[:=]\s*["'][^"']*(utilisateur inconnu|user not found|unknown user|no such user|email not registered|compte introuvable)`; `grep:(?i)if\s+not\s+(user|utilisateur|account|compte)\s*:\s*\n\s*(return|raise)`
 - **source** : [fastapi](https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt/), [fastapi](https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt/) · confiance high
 
-### `KB-0030` · MEDIUM · Comparer secrets et jetons en temps constant
+### `KB-0032` · MEDIUM · Comparer secrets et jetons en temps constant
 
 - **id** : `authentication/timing/secret-compared-with-equality-operator`
 - **exige** : La comparaison d'un secret fourni par l'appelant — mot de passe, jeton d'API, signature de webhook — se fait avec une primitive a temps constant, jamais avec l'operateur d'egalite du langage.
@@ -511,7 +551,7 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 
 ## database
 
-### `KB-0034` · MEDIUM · Ne pas exposer le schema auth — passer par une table de profil protegee
+### `KB-0036` · MEDIUM · Ne pas exposer le schema auth — passer par une table de profil protegee
 
 - **id** : `database/rls/auth-schema-exposed-instead-of-profile-table`
 - **exige** : Les donnees utilisateur accessibles par l'API vivent dans une table de profil du schema public, protegee par RLS et referencant auth.users par sa cle primaire avec suppression en cascade — jamais dans le schema auth lui-meme.
@@ -524,7 +564,7 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 
 ## devops
 
-### `KB-0040` · MEDIUM · Declarer un utilisateur non privilegie dans l'image Docker
+### `KB-0042` · MEDIUM · Declarer un utilisateur non privilegie dans l'image Docker
 
 - **id** : `devops/containers/container-runs-as-root`
 - **exige** : Une image Docker doit comporter une directive USER designant un compte non privilegie, et le conteneur doit etre lance avec l'interdiction d'acquerir de nouveaux privileges.
@@ -534,7 +574,7 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 - **detection** : `absent:^\s*USER\s+\w`; `grep:^\s*USER\s+(root|0)\s*$`
 - **source** : [owasp-cheatsheets](https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html), [owasp-cheatsheets](https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html) · confiance high
 
-### `KB-0041` · MEDIUM · Epingler les dependances a une version verifiee via un fichier de verrouillage
+### `KB-0044` · MEDIUM · Epingler les dependances a une version verifiee via un fichier de verrouillage
 
 - **id** : `devops/dependencies/dependencies-not-pinned-to-verified-version`
 - **exige** : Un outil distribue doit resoudre ses dependances de maniere deterministe : un fichier de verrouillage commite (`uv.lock`, `poetry.lock`, `package-lock.json`) et une installation qui le respecte.
@@ -547,7 +587,7 @@ Une regle dont la citation n'a pas pu etre retrouvee a ete rejetee et n'apparait
 - **detection** : `grep:^\s*[a-zA-Z0-9_.-]+\s*(>=|>|\*|~=)`; `grep:(pip\s+install\s+-r|npm\s+install(?!\s+-g))`
 - **source** : [owasp-cheatsheets](https://cheatsheetseries.owasp.org/cheatsheets/Software_Supply_Chain_Security_Cheat_Sheet.html) · confiance high
 
-### `KB-0044` · MEDIUM · Partir de permissions vides et n'accorder que le necessaire par job
+### `KB-0048` · MEDIUM · Partir de permissions vides et n'accorder que le necessaire par job
 
 - **id** : `devops/github-actions/workflow-permissions-not-restricted`
 - **exige** : Un workflow doit declarer des permissions vides a son niveau, puis accorder explicitement au niveau de chaque job les seules permissions dont il a besoin.

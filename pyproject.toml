@@ -46,6 +46,7 @@ Issues = "https://github.com/Alpha2-far/engineering-kb/issues"
 
 [project.scripts]
 kb = "kb.cli:app"
+kb-mcp = "kb.server:run_server"
 
 [build-system]
 requires = ["hatchling"]
@@ -53,6 +54,10 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/kb"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"rules" = "kb/rules"
+"packs" = "kb/packs"
 
 [dependency-groups]
 dev = [

@@ -26,11 +26,12 @@ DEFAULT_TOPICS: list[SecurityTopic] = [
     SecurityTopic(
         slug="fastapi-jwt-auth",
         title="Authentification JWT & Sessions FastAPI / Python",
-        keywords=["jwt", "auth", "token", "fastapi", "bearer", "session", "oauth", "password", "argon2", "bcrypt"],
+        keywords=["jwt", "auth", "token", "fastapi", "bearer", "session", "oauth", "password", "argon2", "bcrypt", "cookie", "samesite"],
         frameworks=["fastapi", "python", "pydantic"],
         rule_ids=[
             "authentication/password-storage/weak-hashing-algorithm",
             "authentication/session-management/session-token-in-url",
+            "authentication/session-management/cookie-missing-samesite-attribute",
             "app-security/command-injection/user-input-concatenated-into-shell",
         ],
         description="Bonnes pratiques d'authentification par jeton, hachage robuste et validation stricte.",
@@ -42,6 +43,7 @@ DEFAULT_TOPICS: list[SecurityTopic] = [
         frameworks=["supabase", "fastapi", "python", "postgresql"],
         rule_ids=[
             "ai-ml/rag/vector-search-without-tenant-filter",
+            "ai-ml/rag/vector-search-post-retrieval-filtering-leak",
             "ai-ml/prompt-injection/direct-context-concatenation",
             "ai-ml/output-handling/raw-llm-output-executed",
         ],
@@ -50,22 +52,24 @@ DEFAULT_TOPICS: list[SecurityTopic] = [
     SecurityTopic(
         slug="docker-container-security",
         title="Durcissement des Conteneurs Docker & Images",
-        keywords=["docker", "container", "dockerfile", "root", "user", "uid", "alpine"],
+        keywords=["docker", "container", "dockerfile", "root", "user", "uid", "alpine", "socket", "compose"],
         frameworks=["docker", "devops"],
         rule_ids=[
             "devops/containers/container-runs-as-root",
+            "devops/containers/docker-socket-mounted-in-container",
         ],
         description="Exécution de conteneurs sous utilisateur non-privilégié et minimisation de surface d'attaque.",
     ),
     SecurityTopic(
         slug="github-actions-ci",
         title="Sécurité des Pipelines CI/CD & GitHub Actions",
-        keywords=["github", "actions", "ci", "workflow", "sha", "pinned", "permissions", "token"],
+        keywords=["github", "actions", "ci", "workflow", "sha", "pinned", "permissions", "token", "pull_request_target"],
         frameworks=["devops", "github-actions"],
         rule_ids=[
             "devops/github-actions/action-not-pinned-to-commit-sha",
             "devops/github-actions/workflow-permissions-not-restricted",
             "devops/github-actions/context-interpolated-into-run-block",
+            "devops/github-actions/pull-request-target-untrusted-checkout",
         ],
         description="Épinglage strict des actions par SHA immuable et réduction des privilèges GITHUB_TOKEN.",
     ),

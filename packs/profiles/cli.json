@@ -1,7 +1,7 @@
 {
   "profile": "cli",
-  "generated_at": "2026-09-08T10:20:29+00:00",
-  "count": 16,
+  "generated_at": "2026-09-08T10:56:23+00:00",
+  "count": 17,
   "rules": [
     {
       "id": "ai-ml/output-handling/llm-output-passed-to-exec",
@@ -189,7 +189,7 @@
       ],
       "extracted_at": "2026-08-10",
       "extractor": "claude-opus-4-6",
-      "ref": "KB-0018"
+      "ref": "KB-0019"
     },
     {
       "id": "app-security/deserialization/untrusted-data-loaded-with-pickle-or-yaml",
@@ -273,7 +273,7 @@
       "owasp": [],
       "extracted_at": "2026-08-10",
       "extractor": "claude-opus-4-6",
-      "ref": "KB-0020"
+      "ref": "KB-0021"
     },
     {
       "id": "database/sql-injection/dynamic-query-string-concatenation",
@@ -380,7 +380,84 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0039"
+      "ref": "KB-0041"
+    },
+    {
+      "id": "devops/containers/docker-socket-mounted-in-container",
+      "title": "Interdire le montage du socket Docker /var/run/docker.sock dans un conteneur",
+      "category": "devops",
+      "subcategory": "containers",
+      "severity": "critical",
+      "confidence": "high",
+      "description": "Le socket Docker (/var/run/docker.sock) ne doit jamais etre expose ni monte dans un conteneur applicatif, car cela accorde un acces racine complet et sans restriction au demon Docker et a l'hote sous-jacent.",
+      "rationale": "Donner l'acces au socket Unix Docker permet a un attaquant ayant compromis le conteneur de creer d'autres conteneurs avec privileges root, monter le systeme de fichiers racine de l'hote et s'echapper completement de l'isolation du conteneur.",
+      "remediation": "Retirer le volume /var/run/docker.sock des fichiers docker-compose et commandes docker run. Utiliser une API dediee ou un demon isole pour les operations de build.",
+      "context": {
+        "languages": [
+          "yaml"
+        ],
+        "frameworks": [
+          "docker",
+          "docker-compose"
+        ],
+        "platforms": [],
+        "project_types": [
+          "saas",
+          "api",
+          "pipeline",
+          "cli"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "[\"'\\-]?/var/run/docker\\.sock\\s*:\\s*/var/run/docker\\.sock",
+          "applies_to": [
+            "**/docker-compose*.yml",
+            "**/docker-compose*.yaml",
+            "**/compose*.yml",
+            "**/compose*.yaml"
+          ],
+          "note": "Montage dangereux de /var/run/docker.sock dans le conteneur."
+        }
+      ],
+      "autofix": "review",
+      "vulnerable_example": {
+        "lang": "yaml",
+        "code": "services:\n  app:\n    image: myapp:latest\n    volumes:\n      - \"/var/run/docker.sock:/var/run/docker.sock\"\n",
+        "explanation": "Le conteneur applicatif recoit le controle total sur le demon Docker de l'hote."
+      },
+      "fixed_example": {
+        "lang": "yaml",
+        "code": "services:\n  app:\n    image: myapp:latest\n    volumes:\n      - \"app_data:/data\"\nvolumes:\n  app_data:\n",
+        "explanation": "L'application n'a acces qu'a ses volumes dedies, sans toucher au socket demon."
+      },
+      "frameworks": [],
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Docker_Security_Cheat_Sheet.md",
+          "doc_sha256": "3442288cd44dda71aed39e82d6abb7d1d6ffb12350ad1a667d8299c2b5488a43",
+          "quote": "Docker socket _/var/run/docker.sock_ is the UNIX socket that Docker is listening to. This is the primary entry point for the Docker API. The owner of this socket is root. Giving someone access to it is equivalent to giving unrestricted root access to your host.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html",
+          "anchor": "RULE"
+        }
+      ],
+      "tags": [
+        "docker",
+        "docker-compose",
+        "conteneurs",
+        "privilege-escalation"
+      ],
+      "cwe": [
+        "CWE-250"
+      ],
+      "owasp": [
+        "A05:2021"
+      ],
+      "extracted_at": "2026-08-01",
+      "extractor": "claude-opus-5",
+      "ref": "KB-0043"
     },
     {
       "id": "devops/github-actions/context-interpolated-into-run-block",
@@ -471,7 +548,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0043"
+      "ref": "KB-0046"
     },
     {
       "id": "devops/secrets/secret-hardcoded-in-source",
@@ -578,7 +655,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0045"
+      "ref": "KB-0049"
     },
     {
       "id": "app-security/command-injection/executable-chosen-by-user-input",
@@ -652,7 +729,7 @@
       "owasp": [],
       "extracted_at": "2026-08-10",
       "extractor": "claude-opus-4-6",
-      "ref": "KB-0017"
+      "ref": "KB-0018"
     },
     {
       "id": "app-security/command-injection/user-input-passed-as-command-option",
@@ -726,7 +803,7 @@
       "owasp": [],
       "extracted_at": "2026-08-10",
       "extractor": "claude-opus-4-6",
-      "ref": "KB-0019"
+      "ref": "KB-0020"
     },
     {
       "id": "app-security/logging/secrets-written-to-logs",
@@ -818,7 +895,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0023"
+      "ref": "KB-0024"
     },
     {
       "id": "app-security/path-traversal/user-controlled-path-not-confined",
@@ -902,7 +979,7 @@
       "owasp": [],
       "extracted_at": "2026-08-10",
       "extractor": "claude-opus-4-6",
-      "ref": "KB-0024"
+      "ref": "KB-0025"
     },
     {
       "id": "app-security/secrets/secret-passed-as-command-line-argument",
@@ -978,7 +1055,7 @@
       "owasp": [],
       "extracted_at": "2026-08-10",
       "extractor": "claude-opus-4-6",
-      "ref": "KB-0025"
+      "ref": "KB-0026"
     },
     {
       "id": "devops/github-actions/action-not-pinned-to-commit-sha",
@@ -1061,7 +1138,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0042"
+      "ref": "KB-0045"
     },
     {
       "id": "ai-ml/inference/llm-call-without-timeout",
@@ -1215,7 +1292,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0040"
+      "ref": "KB-0042"
     },
     {
       "id": "devops/dependencies/dependencies-not-pinned-to-verified-version",
@@ -1291,7 +1368,7 @@
       ],
       "extracted_at": "2026-08-10",
       "extractor": "claude-opus-4-6",
-      "ref": "KB-0041"
+      "ref": "KB-0044"
     },
     {
       "id": "devops/github-actions/workflow-permissions-not-restricted",
@@ -1362,7 +1439,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0044"
+      "ref": "KB-0048"
     }
   ]
 }

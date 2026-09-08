@@ -1,6 +1,6 @@
 {
   "category": "app-security",
-  "generated_at": "2026-09-08T10:20:29+00:00",
+  "generated_at": "2026-09-08T10:56:23+00:00",
   "count": 9,
   "rules": [
     {
@@ -98,7 +98,7 @@
       ],
       "extracted_at": "2026-08-10",
       "extractor": "claude-opus-4-6",
-      "ref": "KB-0018"
+      "ref": "KB-0019"
     },
     {
       "id": "app-security/deserialization/untrusted-data-loaded-with-pickle-or-yaml",
@@ -182,7 +182,7 @@
       "owasp": [],
       "extracted_at": "2026-08-10",
       "extractor": "claude-opus-4-6",
-      "ref": "KB-0020"
+      "ref": "KB-0021"
     },
     {
       "id": "app-security/command-injection/executable-chosen-by-user-input",
@@ -256,7 +256,7 @@
       "owasp": [],
       "extracted_at": "2026-08-10",
       "extractor": "claude-opus-4-6",
-      "ref": "KB-0017"
+      "ref": "KB-0018"
     },
     {
       "id": "app-security/command-injection/user-input-passed-as-command-option",
@@ -330,7 +330,7 @@
       "owasp": [],
       "extracted_at": "2026-08-10",
       "extractor": "claude-opus-4-6",
-      "ref": "KB-0019"
+      "ref": "KB-0020"
     },
     {
       "id": "app-security/file-upload/extension-and-type-not-validated",
@@ -433,7 +433,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0022"
+      "ref": "KB-0023"
     },
     {
       "id": "app-security/logging/secrets-written-to-logs",
@@ -525,7 +525,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0023"
+      "ref": "KB-0024"
     },
     {
       "id": "app-security/path-traversal/user-controlled-path-not-confined",
@@ -609,7 +609,7 @@
       "owasp": [],
       "extracted_at": "2026-08-10",
       "extractor": "claude-opus-4-6",
-      "ref": "KB-0024"
+      "ref": "KB-0025"
     },
     {
       "id": "app-security/secrets/secret-passed-as-command-line-argument",
@@ -685,7 +685,7 @@
       "owasp": [],
       "extracted_at": "2026-08-10",
       "extractor": "claude-opus-4-6",
-      "ref": "KB-0025"
+      "ref": "KB-0026"
     },
     {
       "id": "app-security/error-handling/stack-trace-returned-to-client",
@@ -772,7 +772,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0021"
+      "ref": "KB-0022"
     }
   ]
 }

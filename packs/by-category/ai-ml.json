@@ -1,7 +1,7 @@
 {
   "category": "ai-ml",
-  "generated_at": "2026-09-08T10:20:29+00:00",
-  "count": 15,
+  "generated_at": "2026-09-08T10:56:23+00:00",
+  "count": 16,
   "rules": [
     {
       "id": "ai-ml/output-handling/llm-generated-sql-not-parameterized",
@@ -284,7 +284,7 @@
       ],
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
-      "ref": "KB-0015"
+      "ref": "KB-0016"
     },
     {
       "id": "ai-ml/agency/high-impact-tool-without-human-approval",
@@ -939,6 +939,83 @@
       "extracted_at": "2026-08-01",
       "extractor": "claude-opus-5",
       "ref": "KB-0013"
+    },
+    {
+      "id": "ai-ml/rag/vector-search-post-retrieval-filtering-leak",
+      "title": "Enforcer l'isolation multi-tenant avant la recherche vectorielle (pre-filtrage)",
+      "category": "ai-ml",
+      "subcategory": "rag",
+      "severity": "high",
+      "confidence": "high",
+      "description": "Dans les architectures RAG multi-tenant, le filtrage par client/organisation doit etre applique au niveau de la requete vectorielle (pre-filtrage) et non apres recuperation des chunks en memoire (post-filtrage).",
+      "rationale": "Le post-filtrage reduit le nombre de resultats exploitables (un tenant peut recevoir 0 resultat si le top-K est absorbe par un autre tenant) et risque de divulguer les scores de similarite ou l'existence de documents tiers confidentiels.",
+      "remediation": "Toujours inclure le filtre de tenant dans les parametres de requete du vector store (ex: filter={'tenant_id': current_tenant}) avant le calcul de similarite.",
+      "context": {
+        "languages": [
+          "python",
+          "typescript"
+        ],
+        "frameworks": [
+          "supabase",
+          "langchain",
+          "llama-index",
+          "pinecone",
+          "chromadb"
+        ],
+        "platforms": [],
+        "project_types": [
+          "ai-rag",
+          "saas"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "similarity_search\\s*\\([^)]*\\)\\s*;\\s*[^;]*\\[\\s*(chunk|doc|item)\\s+for\\s+\\w+\\s+in\\s+[^\\]]*tenant",
+          "applies_to": [
+            "**/*.py"
+          ],
+          "note": "Filtrage post-recuperation suspect sur requete vectorielle."
+        }
+      ],
+      "autofix": "review",
+      "vulnerable_example": {
+        "lang": "python",
+        "code": "docs = vector_store.similarity_search(query, k=10)\ntenant_docs = [d for d in docs if d.metadata.get(\"tenant_id\") == user_tenant]\n",
+        "explanation": "Si un autre tenant a des documents plus proches de la query, les 10 resultats sont occupes par l'autre tenant et le filtre post-requete renvoie une liste vide."
+      },
+      "fixed_example": {
+        "lang": "python",
+        "code": "tenant_docs = vector_store.similarity_search(\n    query,\n    k=10,\n    filter={\"tenant_id\": user_tenant},\n)\n",
+        "explanation": "Le moteur vectoriel isole l'espace de recherche au perimetre du tenant appelant."
+      },
+      "frameworks": [],
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/RAG_Security_Cheat_Sheet.md",
+          "doc_sha256": "e48ca77c8cd69bc9a102facf64cc826a75c9f53253a3eda2e90d45d18ba07d72",
+          "quote": "In multi-tenant or multi-classification environments, vector stores must prevent cross-boundary data leakage. A query from one context must not retrieve chunks from another context. This is mandatory for any organization handling multiple clients, departments with different security clearances, or regulated data.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/RAG_Security_Cheat_Sheet.html",
+          "anchor": "Section 6: Chunk Isolation"
+        }
+      ],
+      "tags": [
+        "rag",
+        "ai-ml",
+        "vector",
+        "isolation",
+        "multi-tenant"
+      ],
+      "cwe": [
+        "CWE-200"
+      ],
+      "owasp": [
+        "A01:2021"
+      ],
+      "extracted_at": "2026-08-01",
+      "extractor": "claude-opus-5",
+      "ref": "KB-0015"
     },
     {
       "id": "ai-ml/agency/open-ended-tool-exposed-to-model",
