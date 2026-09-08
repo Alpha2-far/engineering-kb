@@ -467,4 +467,63 @@ class SecurityContract(BaseModel):
         return "\n".join(lines).strip() + "\n"
 
 
+class EngineeringCertificate(BaseModel):
+    """Certificat d'auditabilité formel attestant de la conformité du code aux règles normatives."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    certificate_id: str = Field(description="Identifiant unique du certificat (ex: KB-CERT-...)")
+    project_name: str = Field(description="Nom du projet certifié")
+    project_root: str = Field(description="Chemin normalisé du projet")
+    timestamp: str = Field(description="Horodatage ISO-8601 UTC de certification")
+    git_commit: str | None = Field(default=None, description="SHA du commit git actif")
+    profile: str = Field(description="Profil de conformité utilisé (ex: saas, ai-rag)")
+    status: str = Field(description="Statut de certification (VERIFIED_CLEAN ou AUDIT_FAILED)")
+    files_scanned: int = Field(description="Nombre de fichiers scannés")
+    rules_evaluated_count: int = Field(description="Nombre de règles normatives évaluées")
+    critical_findings_count: int = Field(default=0, description="Nombre d'infractions critiques")
+    high_findings_count: int = Field(default=0, description="Nombre d'infractions de sévérité haute")
+    total_findings_count: int = Field(default=0, description="Nombre total d'infractions")
+    sources_cited: list[str] = Field(default_factory=list, description="Sources officielles d'autorité citées")
+    signature_sha256: str = Field(description="Empreinte cryptographique scellant le certificat")
+
+    def to_markdown(self) -> str:
+        """Génère un rapport d'auditabilité Markdown formel."""
+        icon = "🛡️" if self.status == "VERIFIED_CLEAN" else "⚠️"
+        lines = [
+            f"# {icon} Certificat d'Auditabilité d'Ingénierie KB",
+            "",
+            f"> **ID du Certificat** : `{self.certificate_id}`  ",
+            f"> **Statut** : **{self.status}**  ",
+            f"> **Date de délivrance** : {self.timestamp}  ",
+            f"> **Projet** : `{self.project_name}`  ",
+            f"> **Profil appliqué** : `{self.profile}`  ",
+            f"> **Commit Git** : `{self.git_commit or 'N/A'}`  ",
+            "",
+            "## 📊 Métriques d'Évaluation",
+            "",
+            f"- **Fichiers scannés** : {self.files_scanned}",
+            f"- **Règles normatives évaluées** : {self.rules_evaluated_count}",
+            f"- **Infractions critiques** : {self.critical_findings_count}",
+            f"- **Infractions hautes** : {self.high_findings_count}",
+            f"- **Total infractions** : {self.total_findings_count}",
+            "",
+            "## 🏛️ Sources Officielles d'Autorité Citées",
+            "",
+        ]
+        for src in self.sources_cited:
+            lines.append(f"- {src}")
+        lines.append("")
+
+        lines.extend([
+            "## 🔒 Sceau d'Intégrité Cryptographique",
+            "",
+            f"```text\nSHA256: {self.signature_sha256}\n```",
+            "",
+            "_Ce certificat atteste que la base de code a été vérifiée de manière déterministe contre les règles de sécurité et d'ingénierie normatives de KB._",
+            "",
+        ])
+        return "\n".join(lines).strip() + "\n"
+
+
 

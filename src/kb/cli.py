@@ -738,6 +738,218 @@ def init_guardrail(
 
 
 @app.command()
+def guard(
+    path: Path = typer.Argument(
+        Path("."),
+        help="Chemin du projet git (par défaut: '.')",
+    ),
+    install_hook: bool = typer.Option(
+        False,
+        "--install-hook",
+        help="Installer le hook git .git/hooks/pre-commit dans le projet",
+    ),
+    all_changes: bool = typer.Option(
+        False,
+        "--all",
+        "-a",
+        help="Analyser tous les fichiers modifiés de l'arbre de travail, pas seulement les staged",
+    ),
+    as_json: bool = typer.Option(
+        False,
+        "--json",
+        help="Sortie au format JSON structuré",
+    ),
+) -> None:
+    """Analyse instantanée (< 100 ms) des fichiers modifiés/stagés dans git avant commit."""
+    from rich.panel import Panel
+    from .guard import get_git_root, guard_staged_changes, install_pre_commit_hook
+
+    git_root = get_git_root(path)
+    if not git_root:
+        if as_json:
+            console.print_json(data={"status": "error", "error": f"Le chemin '{path}' n'est pas un dépôt git."})
+        else:
+            console.print(f"[red bold]Erreur :[/red bold] Le dossier '{path}' n'est pas situé dans un dépôt git.")
+        raise typer.Exit(code=1)
+
+    if install_hook:
+        hook_path = install_pre_commit_hook(git_root)
+        if as_json:
+            console.print_json(data={"status": "success", "hook_path": str(hook_path)})
+        else:
+            console.print(f"[bold green]✅ Hook git pré-commit installé avec succès :[/bold green] [white]{hook_path}[/white]")
+            console.print("[dim]Chaque 'git commit' sera désormais mécaniquement protégé par KB Guard.[/dim]\n")
+        return
+
+    res = guard_staged_changes(git_root, staged_only=not all_changes)
+
+    if as_json:
+        data = {
+            "git_root": str(res.git_root),
+            "files_checked": res.files_checked,
+            "clean": res.clean,
+            "elapsed_ms": res.elapsed_ms,
+            "violations_count": len(res.violations),
+            "violations": [v.model_dump(mode="json") for v in res.violations],
+            "summary": res.summary,
+        }
+        console.print_json(data=data)
+        if not res.clean:
+            raise typer.Exit(code=1)
+        return
+
+    if res.clean:
+        console.print(
+            f"\n[bold green]✅ KB Guard : Conforme[/bold green] "
+            f"[dim]({res.files_checked} fichier(s) audité(s) en {res.elapsed_ms:.1f} ms — 0 infraction critique)[/dim]\n"
+        )
+        return
+
+    console.print(Panel(
+        f"[bold red]🛑 KB Guard : Commit Bloqué ![/bold red]\n"
+        f"[white]{len(res.violations)} violation(s) critique(s) de sécurité interceptée(s) en {res.elapsed_ms:.1f} ms.[/white]\n"
+        f"[dim]Dépôt : {res.git_root}[/dim]",
+        border_style="red",
+    ))
+
+    colors = {"critical": "red", "high": "yellow", "medium": "blue"}
+    for v in res.violations:
+        sev = v.severity.value if hasattr(v.severity, "value") else str(v.severity)
+        sev_color = colors.get(sev, "red")
+        console.print(f"\n[{sev_color} bold][{sev.upper()}][/{sev_color} bold] [bold white]{v.rule_title}[/bold white] [dim]({v.rule_id})[/dim]")
+        console.print(f"  [bold]Fichier :[/bold] [cyan]{v.snippet}[/cyan]")
+        console.print(f"  [bold]Pourquoi :[/bold] {v.rationale.strip()}")
+
+        if v.do_pattern:
+            console.print(f"  [green bold]💡 Pattern Sécurisé Recommandé (DO) :[/green bold]")
+            console.print(f"  [green]{v.do_pattern.strip()}[/green]")
+
+    console.print("\n[dim]⚠️ Corrigez ces infractions ou appliquez les patterns DO avant de commiter.[/dim]\n")
+    raise typer.Exit(code=1)
+
+
+@app.command()
+def verify(
+    path: Path = typer.Argument(
+        Path("."),
+        help="Dossier du projet à certifier (par défaut: '.')",
+    ),
+    profile: str = typer.Option(
+        "saas",
+        "--profile",
+        "-p",
+        help="Profil de conformité à appliquer (ex: saas, ai-rag, api)",
+    ),
+    badge: bool = typer.Option(
+        False,
+        "--badge",
+        "-b",
+        help="Générer un badge SVG (kb-badge.svg) et le snippet Markdown pour le README",
+    ),
+    out_dir: Path | None = typer.Option(
+        None,
+        "--out-dir",
+        "-o",
+        help="Dossier de destination pour le certificat et le badge (par défaut: racine du projet)",
+    ),
+    as_json: bool = typer.Option(
+        False,
+        "--json",
+        help="Sortie au format JSON sur stdout",
+    ),
+) -> None:
+    """Génère un certificat d'auditabilité formel (kb-audit-certificate.json) et valide la conformité."""
+    from rich.panel import Panel
+    from rich.table import Table
+    from .certificate import (
+        generate_badge_markdown,
+        generate_badge_svg,
+        generate_certificate,
+        save_certificate,
+    )
+
+    target_dir = path.resolve()
+    if not target_dir.exists():
+        if as_json:
+            console.print_json(data={"status": "error", "error": f"Le chemin '{target_dir}' n'existe pas."})
+        else:
+            console.print(f"[red bold]Erreur :[/red bold] Le dossier '{target_dir}' n'existe pas.")
+        raise typer.Exit(code=1)
+
+    try:
+        cert = generate_certificate(target_dir, profile=profile)
+    except Exception as e:
+        if as_json:
+            console.print_json(data={"status": "error", "error": str(e)})
+        else:
+            console.print(f"[red bold]Erreur lors de la certification :[/red bold] {e}")
+        raise typer.Exit(code=1)
+
+    destination = out_dir.resolve() if out_dir else target_dir
+    json_path, md_path = save_certificate(cert, destination)
+
+    badge_path = None
+    badge_md = None
+    if badge:
+        is_clean = (cert.status == "VERIFIED_CLEAN")
+        svg = generate_badge_svg(verified=is_clean)
+        badge_path = destination / "kb-badge.svg"
+        badge_path.write_text(svg, encoding="utf-8")
+        badge_md = generate_badge_markdown(verified=is_clean)
+
+    if as_json:
+        data = cert.model_dump(mode="json")
+        data["files_generated"] = {
+            "certificate_json": str(json_path),
+            "certificate_md": str(md_path),
+            "badge_svg": str(badge_path) if badge_path else None,
+        }
+        console.print_json(data=data)
+        if cert.status != "VERIFIED_CLEAN":
+            raise typer.Exit(code=1)
+        return
+
+    if cert.status == "VERIFIED_CLEAN":
+        console.print(Panel(
+            f"[bold green]🛡️ CERTIFICAT D'AUDITABILITÉ ÉMIS : VERIFIED_CLEAN[/bold green]\n"
+            f"[white]ID Certificat :[/white] [cyan bold]{cert.certificate_id}[/cyan bold]\n"
+            f"[white]Projet :[/white] {cert.project_name} [dim]({cert.project_root})[/dim]\n"
+            f"[white]Profil :[/white] [magenta]{cert.profile}[/magenta] | [white]Commit :[/white] [dim]{cert.git_commit or 'N/A'}[/dim]\n"
+            f"[white]Sceau SHA-256 :[/white] [dim]{cert.signature_sha256}[/dim]",
+            border_style="green",
+        ))
+
+        table = Table(title="Bilan d'Évaluation Formelle", border_style="green")
+        table.add_column("Métrique", style="bold white")
+        table.add_column("Valeur", justify="right", style="cyan")
+
+        table.add_row("Fichiers Scannés", str(cert.files_scanned))
+        table.add_row("Règles Normatives Évaluées", str(cert.rules_evaluated_count))
+        table.add_row("Sources Officielles Citées", str(len(cert.sources_cited)))
+        table.add_row("Infractions Critiques", "[bold green]0[/bold green]")
+        table.add_row("Total Infractions", "[bold green]0[/bold green]")
+
+        console.print(table)
+        console.print(f"\n[green]✅ Certificat enregistré :[/green] [white]{json_path}[/white]")
+        console.print(f"[green]✅ Rapport Markdown :[/green] [white]{md_path}[/white]")
+
+        if badge_md:
+            console.print(f"[green]✅ Badge vectoriel :[/green] [white]{badge_path}[/white]")
+            console.print(f"\n[bold cyan]Snippet README :[/bold cyan]\n[white]{badge_md}[/white]\n")
+    else:
+        console.print(Panel(
+            f"[bold red]⚠️ CERTIFICATION ÉCHOUÉE : AUDIT_FAILED[/bold red]\n"
+            f"[white]ID Certificat :[/white] {cert.certificate_id}\n"
+            f"[white]Infractions Critiques :[/white] [bold red]{cert.critical_findings_count}[/bold red] | "
+            f"[white]Hautes :[/white] [bold yellow]{cert.high_findings_count}[/bold yellow] | "
+            f"[white]Total :[/white] {cert.total_findings_count}\n"
+            f"[dim]Rapport détaillé : {md_path}[/dim]",
+            border_style="red",
+        ))
+        raise typer.Exit(code=1)
+
+
+@app.command()
 def mcp(
     transport: str = typer.Option("stdio", "--transport", "-t", help="Transport MCP ('stdio' par défaut)"),
 ) -> None:
