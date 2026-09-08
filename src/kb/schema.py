@@ -416,3 +416,55 @@ class AuditVerdict(BaseModel):
     summary: str = Field(default="", description="Synthèse textuelle lisible pour l'agent")
 
 
+class SecurityContract(BaseModel):
+    """Contrat de sécurité par stack technologique pour forcer l'ingénierie Shift-Left."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    stack_id: str = Field(description="Identifiant normalisé de la stack (ex: fastapi-supabase-rag)")
+    name: str = Field(description="Nom lisible du contrat de sécurité")
+    description: str = Field(default="", description="Périmètre et contexte d'application")
+    invariants: list[str] = Field(default_factory=list, description="Règles d'or absolues à respecter dès la conception")
+    pre_coding_checklist: list[str] = Field(default_factory=list, description="Points de contrôle que l'agent doit attester avant d'écrire du code")
+    do_patterns: list[dict[str, str]] = Field(default_factory=list, description="Patterns de code sécurisés recommandés")
+    rule_ids: list[str] = Field(default_factory=list, description="Identifiants des règles normatives de KB liées")
+
+    def to_markdown(self) -> str:
+        """Génère un bloc Markdown prêt pour injection dans le contexte d'un agent."""
+        lines = [
+            f"# Contrat de Sécurité Normatif : {self.name} (`{self.stack_id}`)",
+            "",
+        ]
+        if self.description:
+            lines.extend([f"> {self.description}", ""])
+
+        lines.extend(["## 🔒 Invariants Absolus (Non Négociables)", ""])
+        for inv in self.invariants:
+            lines.append(f"- **{inv}**")
+        lines.append("")
+
+        lines.extend(["## ✅ Checklist Pré-Codage (Attestation Obligatoire)", ""])
+        for item in self.pre_coding_checklist:
+            lines.append(f"- [ ] {item}")
+        lines.append("")
+
+        if self.do_patterns:
+            lines.extend(["## 💡 Patterns Sécurisés de Référence (DO)", ""])
+            for p in self.do_patterns:
+                title = p.get("title", "Pattern")
+                lang = p.get("lang", "")
+                code = p.get("code", "").strip()
+                lines.append(f"### {title}")
+                lines.append(f"```{lang}\n{code}\n```")
+                lines.append("")
+
+        if self.rule_ids:
+            lines.extend(["## 📜 Règles Normatives Associées", ""])
+            for rid in self.rule_ids:
+                lines.append(f"- `{rid}`")
+            lines.append("")
+
+        return "\n".join(lines).strip() + "\n"
+
+
+

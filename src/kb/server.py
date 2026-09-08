@@ -11,7 +11,8 @@ from typing import Any
 from fastmcp import FastMCP
 
 from .audit import audit_snippet
-from .schema import SecurityTopic
+from .contracts import get_contract, list_contracts
+from .schema import SecurityContract, SecurityTopic
 from .search import SearchResult, format_for_agent, get_search_engine
 
 # Initialisation du serveur FastMCP
@@ -23,9 +24,10 @@ mcp = FastMCP(
 @mcp.tool(
     name="resolve_security_topic",
     description=(
+        "SHIFT-LEFT OBLIGATOIRE : À appeler AVANT de concevoir ou d'écrire du code. "
         "Mappe une intention technique naturelle ou un sujet (ex. 'JWT auth FastAPI', "
         "'Supabase vector search', 'Dockerfile root') vers le topic de sécurité associé "
-        "et renvoie les identifiants de règles normatives prioritaires."
+        "et renvoie les identifiants de règles normatives prioritaires à respecter."
     ),
 )
 def resolve_security_topic(query: str) -> dict[str, Any]:
@@ -122,9 +124,9 @@ def resolve_security_topic(query: str) -> dict[str, Any]:
 @mcp.tool(
     name="get_security_rules",
     description=(
-        "Retourne les fiches de sécurité compactes et les patterns concrets Do / Don't "
-        "pour un topic, une liste d'identifiants de règles (rule_ids) ou une requête technique, "
-        "ainsi qu'un bloc Markdown prêt à injecter."
+        "PRÉ-CODAGE OBLIGATOIRE : À appeler AVANT d'implémenter du code pour charger les directives "
+        "de sécurité officielles et les patterns concrets Do / Don't. Évite les pièges fréquents "
+        "générés par les LLMs (SameSite manquant, root Docker, injection shell, fuite RAG)."
     ),
 )
 def get_security_rules(
@@ -179,10 +181,52 @@ def get_security_rules(
 
 
 @mcp.tool(
+    name="get_security_contract",
+    description=(
+        "CONTRAT DE SÉCURITÉ SHIFT-LEFT : À appeler au démarrage d'une tâche pour obtenir "
+        "le contrat normatif complet d'une stack (fastapi-supabase-rag, nextjs-auth, "
+        "docker-compose, github-actions-ci) avec ses invariants absolus, sa checklist pré-codage "
+        "et ses patterns DO de référence."
+    ),
+)
+def get_security_contract(stack: str) -> dict[str, Any]:
+    """Fournit le contrat de sécurité normatif complet pour guider la conception avant codage."""
+    contract = get_contract(stack)
+    if not contract:
+        available = [c.stack_id for c in list_contracts()]
+        return {
+            "found": False,
+            "query": stack,
+            "stack_id": None,
+            "name": "Contrat non trouvé",
+            "description": f"Aucun contrat ne correspond à '{stack}'. Stacks disponibles : {', '.join(available)}",
+            "invariants": [],
+            "pre_coding_checklist": [],
+            "do_patterns": [],
+            "rule_ids": [],
+            "markdown": f"# Contrat non trouvé pour `{stack}`\n\nStacks disponibles : {', '.join(f'`{s}`' for s in available)}",
+        }
+
+    return {
+        "found": True,
+        "query": stack,
+        "stack_id": contract.stack_id,
+        "name": contract.name,
+        "description": contract.description,
+        "invariants": contract.invariants,
+        "pre_coding_checklist": contract.pre_coding_checklist,
+        "do_patterns": contract.do_patterns,
+        "rule_ids": contract.rule_ids,
+        "markdown": contract.to_markdown(),
+    }
+
+
+@mcp.tool(
     name="audit_code_snippet",
     description=(
-        "Audite en mémoire un extrait de code généré par un agent pour détecter mécaniquement "
-        "les violations de sécurité (grep & absent) et renvoyer la remédiation exacte."
+        "GARDE-FOU POST-CODAGE : Audite en mémoire (< 10 ms) un extrait de code généré par l'agent "
+        "AVANT de le sauvegarder ou de le commiter, pour certifier l'absence de faille mécanique "
+        "(grep & absent) et renvoyer la remédiation exacte si nécessaire."
     ),
 )
 def audit_code_snippet(code: str, filename: str) -> dict[str, Any]:

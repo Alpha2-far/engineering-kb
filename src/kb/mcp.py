@@ -2,6 +2,7 @@
 
 from .server import (
     audit_code_snippet,
+    get_security_contract,
     get_security_rules,
     mcp,
     resolve_security_topic,
@@ -12,6 +13,8 @@ __all__ = [
     "mcp",
     "resolve_security_topic",
     "get_security_rules",
+    "get_security_contract",
     "audit_code_snippet",
     "run_server",
 ]
+

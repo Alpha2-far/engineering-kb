@@ -560,6 +560,60 @@ def search(
 
 
 @app.command()
+def contract(
+    stack: str | None = typer.Argument(None, help="Slug ou mot-clé de la stack (ex: fastapi-supabase-rag, docker-compose)"),
+    list_all: bool = typer.Option(False, "--list", "-l", help="Lister tous les contrats de sécurité disponibles"),
+    as_json: bool = typer.Option(False, "--json", help="Afficher la sortie au format JSON brut"),
+) -> None:
+    """Affiche les contrats de sécurité normatifs et leurs invariants Shift-Left."""
+    import json
+    from rich.markdown import Markdown
+    from rich.table import Table
+    from .contracts import get_contract, list_contracts
+
+    contracts = list_contracts()
+
+    if list_all or not stack:
+        if as_json:
+            data = [c.model_dump(mode="json") for c in contracts]
+            console.print_json(data=data)
+            return
+
+        table = Table(title="Contrats de Sécurité Normatifs (Shift-Left Engineering)", border_style="cyan")
+        table.add_column("Stack ID", style="bold cyan", no_wrap=True)
+        table.add_column("Nom du Contrat", style="white")
+        table.add_column("Invariants", justify="right", style="magenta")
+        table.add_column("Patterns DO", justify="right", style="green")
+        table.add_column("Règles Liées", justify="right", style="yellow")
+
+        for c in contracts:
+            table.add_row(
+                c.stack_id,
+                c.name,
+                str(len(c.invariants)),
+                str(len(c.do_patterns)),
+                str(len(c.rule_ids)),
+            )
+
+        console.print(table)
+        console.print("\n[dim]💡 Affichez le détail d'un contrat avec : [bold]kb contract <stack-id>[/bold][/dim]\n")
+        return
+
+    c = get_contract(stack)
+    if not c:
+        available = ", ".join(f"[cyan]{item.stack_id}[/cyan]" for item in contracts)
+        console.print(f"[red bold]Erreur :[/red bold] Aucun contrat pour '{stack}'. Stacks disponibles : {available}")
+        raise typer.Exit(code=1)
+
+    if as_json:
+        console.print_json(data=c.model_dump(mode="json"))
+        return
+
+    md_content = c.to_markdown()
+    console.print(Markdown(md_content))
+
+
+@app.command()
 def mcp(
     transport: str = typer.Option("stdio", "--transport", "-t", help="Transport MCP ('stdio' par défaut)"),
 ) -> None:
@@ -575,3 +629,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
