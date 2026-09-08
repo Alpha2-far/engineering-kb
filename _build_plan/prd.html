@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" class="dark">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>KB Security Context Server — PRD</title>
+  <title>KB Context7 for Security — PRD</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = { darkMode: 'class' };
@@ -30,7 +30,7 @@
 <body class="bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 antialiased">
   <header class="sticky top-0 z-10 backdrop-blur bg-zinc-50/80 dark:bg-zinc-950/80 border-b border-zinc-200 dark:border-zinc-800">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
-      <span class="text-sm font-medium text-zinc-500 dark:text-zinc-400">PRD · KB Security Context Server (Context7 for Security)</span>
+      <span class="text-sm font-medium text-zinc-500 dark:text-zinc-400">PRD · KB Security Shift-Left & Anti-Vibe-Coding</span>
       <button id="theme-toggle" class="no-print inline-flex items-center justify-center w-9 h-9 rounded-md border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition" aria-label="Toggle theme">
         <i data-lucide="sun" class="hidden dark:inline-block w-4 h-4"></i>
         <i data-lucide="moon" class="inline-block dark:hidden w-4 h-4"></i>
@@ -42,388 +42,184 @@
 
     <!-- DISCLAIMER -->
     <div class="rounded-lg border border-amber-200 dark:border-amber-900/60 bg-amber-50 dark:bg-amber-950/30 p-4 text-sm text-amber-900 dark:text-amber-200">
-      <p><strong class="font-semibold">À propos de ce document :</strong> L'ensemble du dossier <code class="font-mono text-xs">_build_plan/</code> (ce PRD et les dossiers de jalons) constitue un artefact de documentation et de guidage temporaire pour la construction initiale du système. Ces fichiers ne sont pas fonctionnels et aucun code de production ne doit en dépendre. Une fois les jalons livrés, ce dossier peut être archivé ou supprimé.</p>
+      <p><strong class="font-semibold">Document de conception :</strong> Tout ce qui se trouve dans <code class="font-mono text-xs">_build_plan/</code> est un artefact temporaire guidant l'implémentation par jalons. Une fois ces jalons livrés, le répertoire a vocation à être archivé.</p>
     </div>
 
     <!-- HERO -->
     <section>
-      <div class="flex items-center gap-3">
-        <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">Agent-Native Security</span>
-        <span class="text-xs text-zinc-500 dark:text-zinc-400">v1.0 · FastMCP Engine</span>
+      <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 mb-4">
+        <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+        Shift-Left Engineering · Context7 for Security
       </div>
-      <h1 class="mt-4 text-4xl sm:text-5xl font-bold tracking-tight">KB Security Context Server</h1>
+      <h1 class="text-4xl sm:text-5xl font-bold tracking-tight">KB Anti-Vibe-Coding System</h1>
       <p class="mt-5 text-lg sm:text-xl text-zinc-600 dark:text-zinc-400 leading-relaxed">
-        Fournisseur de contexte de sécurité temps-réel pour agents de code (Claude Code, Cursor, Codex, Antigravity) — l'équivalent direct de <strong>Context7</strong> appliqué à la sécurité applicative. Fournit à chaud via MCP des règles normatives vérifiées (OWASP, NIST, RFC), des patterns de code sûrs (« Do / Don't ») et l'audit mécanique instantané du code généré.
+        Transformer KB en un système d'ingénierie de sécurité proactif façon <strong>Context7</strong> : forcer l'injection des standards normatifs officiels et des patterns DO/DON'T dans les agents IA <strong>avant</strong> l'écriture du code, éliminer le vibe coding par des contrats de sécurité explicites, et garantir l'auto-remédiation mécanique avant tout commit.
       </p>
-      <div class="mt-6 flex flex-wrap gap-2">
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-700 dark:text-zinc-300">Python 3.12+</span>
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-700 dark:text-zinc-300">Astral uv</span>
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-700 dark:text-zinc-300">FastMCP</span>
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-700 dark:text-zinc-300">Pydantic v2</span>
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-700 dark:text-zinc-300">Typer & Rich</span>
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs font-medium text-zinc-700 dark:text-zinc-300">Local-First (Zero Cloud Cost)</span>
+    </section>
+
+    <!-- CORE CAPABILITIES (WHAT IT DOES) -->
+    <section class="space-y-6">
+      <h2 class="text-2xl font-bold tracking-tight flex items-center gap-2">
+        <i data-lucide="zap" class="w-6 h-6 text-amber-500"></i>
+        Ce que fait le système
+      </h2>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div class="p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm space-y-2">
+          <div class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center font-semibold">
+            <i data-lucide="compass" class="w-4 h-4"></i>
+          </div>
+          <h3 class="font-semibold text-base">Injonction Pré-Codage (Shift-Left)</h3>
+          <p class="text-sm text-zinc-600 dark:text-zinc-400">Descriptions FastMCP forçant les LLMs à interroger KB dès la phase de planification avant d'écrire la moindre ligne.</p>
+        </div>
+
+        <div class="p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm space-y-2">
+          <div class="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400 flex items-center justify-center font-semibold">
+            <i data-lucide="file-check-2" class="w-4 h-4"></i>
+          </div>
+          <h3 class="font-semibold text-base">Contrats de Sécurité par Stack</h3>
+          <p class="text-sm text-zinc-600 dark:text-zinc-400">Packs normatifs (FastAPI/Supabase RAG, Next.js, Docker, CI) avec invariants absolus et checklist pré-codage.</p>
+        </div>
+
+        <div class="p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm space-y-2">
+          <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-semibold">
+            <i data-lucide="terminal" class="w-4 h-4"></i>
+          </div>
+          <h3 class="font-semibold text-base">CLI `kb init-guardrail`</h3>
+          <p class="text-sm text-zinc-600 dark:text-zinc-400">Injecte automatiquement les règles de sécurité dans `.cursorrules`, `AGENTS.md` et `CLAUDE.md` de n'importe quel projet client.</p>
+        </div>
+
+        <div class="p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm space-y-2">
+          <div class="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 flex items-center justify-center font-semibold">
+            <i data-lucide="git-commit-vertical" class="w-4 h-4"></i>
+          </div>
+          <h3 class="font-semibold text-base">Hook Git Pre-Commit `kb guard`</h3>
+          <p class="text-sm text-zinc-600 dark:text-zinc-400">Garde-fou local ultra-rapide (< 100 ms) interceptant et bloquant tout commit contenant une violation critique.</p>
+        </div>
       </div>
     </section>
 
-    <!-- WHAT THE APP DOES -->
-    <section>
-      <h2 class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
-        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>Fonctionnalités clés (Périmètre In-Scope)
+    <!-- ALREADY BUILT -->
+    <section class="p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-900/50 space-y-3">
+      <h2 class="text-lg font-semibold flex items-center gap-2">
+        <i data-lucide="layers" class="w-5 h-5 text-emerald-500"></i>
+        Déjà opérationnel dans la base de code
       </h2>
-      <ul class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3 list-none p-0">
-        <li class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-          <div class="flex items-start gap-3">
-            <div class="shrink-0 mt-0.5 w-8 h-8 rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-              <i data-lucide="cpu" class="w-4 h-4 text-zinc-700 dark:text-zinc-300"></i>
-            </div>
-            <div>
-              <p class="font-medium text-zinc-900 dark:text-zinc-100">Serveur MCP Natif pour Agents</p>
-              <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">Exécute un serveur stdio standardisé que tout agent IA (Claude Code, Cursor, Codex) peut invoquer en temps réel pendant la rédaction de code.</p>
-            </div>
-          </div>
-        </li>
-        <li class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-          <div class="flex items-start gap-3">
-            <div class="shrink-0 mt-0.5 w-8 h-8 rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-              <i data-lucide="code-2" class="w-4 h-4 text-zinc-700 dark:text-zinc-300"></i>
-            </div>
-            <div>
-              <p class="font-medium text-zinc-900 dark:text-zinc-100">Patterns Do / Don't Concrets</p>
-              <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">Associe à chaque règle un exemple de code vulnérable fréquent chez les LLMs et le code sécurisé de référence à implémenter.</p>
-            </div>
-          </div>
-        </li>
-        <li class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-          <div class="flex items-start gap-3">
-            <div class="shrink-0 mt-0.5 w-8 h-8 rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-              <i data-lucide="search" class="w-4 h-4 text-zinc-700 dark:text-zinc-300"></i>
-            </div>
-            <div>
-              <p class="font-medium text-zinc-900 dark:text-zinc-100">Résolution Sémantique Économe</p>
-              <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">Résout une intention technique ("JWT auth FastAPI", "vector search") vers un condensé strict de règles prioritaires (~1 000 tokens max).</p>
-            </div>
-          </div>
-        </li>
-        <li class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-          <div class="flex items-start gap-3">
-            <div class="shrink-0 mt-0.5 w-8 h-8 rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-              <i data-lucide="shield-alert" class="w-4 h-4 text-zinc-700 dark:text-zinc-300"></i>
-            </div>
-            <div>
-              <p class="font-medium text-zinc-900 dark:text-zinc-100">Audit de Code en Mémoire</p>
-              <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">Vérifie en quelques millisecondes un bloc de code généré pour intercepter les failles mécaniques avant qu'elles n'atteignent le fichier sur disque.</p>
-            </div>
-          </div>
-        </li>
-        <li class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-          <div class="flex items-start gap-3">
-            <div class="shrink-0 mt-0.5 w-8 h-8 rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-              <i data-lucide="book-open-check" class="w-4 h-4 text-zinc-700 dark:text-zinc-300"></i>
-            </div>
-            <div>
-              <p class="font-medium text-zinc-900 dark:text-zinc-100">Ancrage Normatif Strict (>= 85%)</p>
-              <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">Toutes les règles sont prouvées mathématiquement contre des documents officiels archivés (OWASP, NIST, RFC, CIS). Zéro hallucination.</p>
-            </div>
-          </div>
-        </li>
-        <li class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-          <div class="flex items-start gap-3">
-            <div class="shrink-0 mt-0.5 w-8 h-8 rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
-              <i data-lucide="zap" class="w-4 h-4 text-zinc-700 dark:text-zinc-300"></i>
-            </div>
-            <div>
-              <p class="font-medium text-zinc-900 dark:text-zinc-100">Distribution Zéro-Config (uvx)</p>
-              <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">Branchement instantané dans la configuration MCP de l'utilisateur sans build lourd ni dépendance globale requise.</p>
-            </div>
-          </div>
-        </li>
-      </ul>
-    </section>
-
-    <!-- ALREADY PROVIDED -->
-    <section>
-      <h2 class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
-        <i data-lucide="package-check" class="w-3.5 h-3.5"></i>Déjà fourni par le codebase existant
-      </h2>
-      <ul class="mt-5 flex flex-wrap gap-2 list-none p-0">
-        <li class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-sm text-zinc-700 dark:text-zinc-300">
-          <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>Registre de 95 sources officielles (OWASP, RFC, NIST)
-        </li>
-        <li class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-sm text-zinc-700 dark:text-zinc-300">
-          <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>Moteur d'ancrage textuel Grounding Judge (seuil 85%)
-        </li>
-        <li class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-sm text-zinc-700 dark:text-zinc-300">
-          <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>47 règles de sécurité compilées et validées (0 rejet)
-        </li>
-        <li class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-sm text-zinc-700 dark:text-zinc-300">
-          <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>Audit statique CLI tri-state (matière / sans occurrence / hors-périmètre)
-        </li>
-        <li class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-sm text-zinc-700 dark:text-zinc-300">
-          <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>Suite de 22 tests unitaires automatisés & CI GitHub Actions
-        </li>
+      <ul class="text-sm text-zinc-600 dark:text-zinc-400 space-y-2 list-disc list-inside">
+        <li><strong>51 règles de sécurité actives</strong> vérifiées par le Grounding Judge avec 0 rejet (OWASP, RFCs).</li>
+        <li><strong>Moteur de recherche sémantique</strong> pondéré par sévérité et intent matching (`kb search`).</li>
+        <li><strong>Serveur FastMCP natif</strong> (stdio) avec audit instantané en mémoire (`audit_code_snippet`).</li>
+        <li><strong>Packaging standalone Hatchling</strong> et distribution 1-ligne via <code class="text-xs font-mono">uvx kb mcp</code>.</li>
+        <li><strong>Suite de 52 tests pytest</strong> validée à 100% sur GitHub Actions CI.</li>
       </ul>
     </section>
 
     <!-- OUT OF SCOPE -->
-    <section>
-      <h2 class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
-        <i data-lucide="minus-circle" class="w-3.5 h-3.5"></i>Exclusions explicites (Hors-Périmètre v1)
+    <section class="space-y-4">
+      <h2 class="text-xl font-bold tracking-tight flex items-center gap-2">
+        <i data-lucide="slash" class="w-5 h-5 text-rose-500"></i>
+        Hors-Périmètre v1
       </h2>
-      <ul class="mt-5 space-y-2.5 list-none p-0">
-        <li class="flex items-start gap-3">
-          <i data-lucide="x" class="w-4 h-4 mt-1 shrink-0 text-zinc-400 dark:text-zinc-600"></i>
-          <span class="text-zinc-700 dark:text-zinc-300"><span class="font-medium">Pas de SaaS / Dashboard web / Facturation</span><span class="text-zinc-500 dark:text-zinc-400"> — Focus à 100 % sur l'infrastructure pour agents et développeurs.</span></span>
-        </li>
-        <li class="flex items-start gap-3">
-          <i data-lucide="x" class="w-4 h-4 mt-1 shrink-0 text-zinc-400 dark:text-zinc-600"></i>
-          <span class="text-zinc-700 dark:text-zinc-300"><span class="font-medium">Pas d'auto-fix en boîte noire</span><span class="text-zinc-500 dark:text-zinc-400"> — L'outil conseille et alerte avec des patterns précis sans modifier le code de façon opaque.</span></span>
-        </li>
-        <li class="flex items-start gap-3">
-          <i data-lucide="x" class="w-4 h-4 mt-1 shrink-0 text-zinc-400 dark:text-zinc-600"></i>
-          <span class="text-zinc-700 dark:text-zinc-300"><span class="font-medium">Pas de scraping web en temps réel au runtime</span><span class="text-zinc-500 dark:text-zinc-400"> — Seules les règles officielles archivées et vérifiées sont servies.</span></span>
-        </li>
-        <li class="flex items-start gap-3">
-          <i data-lucide="x" class="w-4 h-4 mt-1 shrink-0 text-zinc-400 dark:text-zinc-600"></i>
-          <span class="text-zinc-700 dark:text-zinc-300"><span class="font-medium">Pas d'analyse dynamique en sandbox (DAST)</span><span class="text-zinc-500 dark:text-zinc-400"> — Analyse statique instantanée uniquement, sans exécution arbitraire de code.</span></span>
-        </li>
-        <li class="flex items-start gap-3">
-          <i data-lucide="x" class="w-4 h-4 mt-1 shrink-0 text-zinc-400 dark:text-zinc-600"></i>
-          <span class="text-zinc-700 dark:text-zinc-300"><span class="font-medium">Zéro dépendance cloud payante obligatoire</span><span class="text-zinc-500 dark:text-zinc-400"> — Moteur 100 % autonome et fonctionnel en local-first.</span></span>
-        </li>
-      </ul>
+      <div class="p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm space-y-2">
+        <p class="text-zinc-600 dark:text-zinc-400">❌ <strong>Pas de dashboard web SaaS lourd :</strong> KB reste 100% CLI et FastMCP pour une exécution locale sans latence.</p>
+        <p class="text-zinc-600 dark:text-zinc-400">❌ <strong>Pas de proxy HTTP runtime :</strong> KB audite le code source, pas le trafic réseau en production.</p>
+        <p class="text-zinc-600 dark:text-zinc-400">❌ <strong>Pas d'autofix aveugle :</strong> L'agent ou le développeur doit toujours valider les propositions de remédiation.</p>
+        <p class="text-zinc-600 dark:text-zinc-400">❌ <strong>Pas de multi-tenant ou facturation :</strong> Conçu pour fonctionner sur les machines et runners CI de chaque projet.</p>
+      </div>
     </section>
 
     <!-- DATA MODEL -->
-    <section>
-      <h2 class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
-        <i data-lucide="database" class="w-3.5 h-3.5"></i>Modèle de données
+    <section class="space-y-4">
+      <h2 class="text-xl font-bold tracking-tight flex items-center gap-2">
+        <i data-lucide="database" class="w-5 h-5 text-blue-500"></i>
+        Modèle de Données & Contrats
       </h2>
-      <p class="mt-3 text-sm text-zinc-500 dark:text-zinc-400">Les entités manipulées par KB pour distribuer et auditer la sécurité.</p>
-      <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <!-- Rule -->
-        <div class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
-          <div class="flex items-center gap-2">
-            <i data-lucide="box" class="w-4 h-4 text-zinc-500 dark:text-zinc-400"></i>
-            <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">Rule (Règle enrichie)</h3>
-          </div>
-          <table class="mt-4 w-full text-sm">
-            <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
-              <tr>
-                <td class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap">id / title</td>
-                <td class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed">Identifiant immuable (KB-0015) et règle impérative.</td>
-              </tr>
-              <tr>
-                <td class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap">do_pattern</td>
-                <td class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed">Extrait de code sécurisé recommandé à destination de l'agent.</td>
-              </tr>
-              <tr>
-                <td class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap">dont_pattern</td>
-                <td class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed">Piège de code vulnérable fréquent produit par les LLMs.</td>
-              </tr>
-              <tr>
-                <td class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap">frameworks</td>
-                <td class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed">Tags cibles (fastapi, supabase, docker, jwt, nextjs).</td>
-              </tr>
-              <tr>
-                <td class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap">evidence</td>
-                <td class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed">Citation verbatim officielle et SHA-256 du document archivé.</td>
-              </tr>
-            </tbody>
-          </table>
-          <p class="mt-4 text-xs text-zinc-500 dark:text-zinc-400"><span class="font-semibold uppercase tracking-[0.14em] text-[11px]">Relié à</span> · SecurityTopic</p>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div class="p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm space-y-2">
+          <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">SecurityContract (Nouveau)</h3>
+          <ul class="text-xs text-zinc-500 dark:text-zinc-400 space-y-1">
+            <li>• <code class="font-mono">stack_id</code> : identifiant de stack technologique</li>
+            <li>• <code class="font-mono">invariants</code> : 3 à 5 règles d'or non négociables</li>
+            <li>• <code class="font-mono">pre_coding_checklist</code> : points de contrôle préalables</li>
+            <li>• <code class="font-mono">do_patterns</code> : exemples de code conformes prêts à injecter</li>
+          </ul>
         </div>
-
-        <!-- SecurityTopic -->
-        <div class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5">
-          <div class="flex items-center gap-2">
-            <i data-lucide="layers" class="w-4 h-4 text-zinc-500 dark:text-zinc-400"></i>
-            <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">SecurityTopic (Index Sémantique)</h3>
-          </div>
-          <table class="mt-4 w-full text-sm">
-            <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
-              <tr>
-                <td class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap">slug</td>
-                <td class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed">Identifiant thématique (fastapi-jwt, rag-isolation, docker-root).</td>
-              </tr>
-              <tr>
-                <td class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap">keywords</td>
-                <td class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed">Synonymes et termes naturels employés dans les prompts d'agents.</td>
-              </tr>
-              <tr>
-                <td class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap">rule_ids</td>
-                <td class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed">Liste ordonnée des règles applicables par criticité décroissante.</td>
-              </tr>
-            </tbody>
-          </table>
-          <p class="mt-4 text-xs text-zinc-500 dark:text-zinc-400"><span class="font-semibold uppercase tracking-[0.14em] text-[11px]">Relié à</span> · Rule</p>
-        </div>
-
-        <!-- AuditVerdict -->
-        <div class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 sm:col-span-2">
-          <div class="flex items-center gap-2">
-            <i data-lucide="clipboard-check" class="w-4 h-4 text-zinc-500 dark:text-zinc-400"></i>
-            <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">AuditVerdict (Retour Diagnostic Mémoire)</h3>
-          </div>
-          <table class="mt-4 w-full text-sm">
-            <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
-              <tr>
-                <td class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap">clean</td>
-                <td class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed">Booléen validant la conformité mécanique du code inspecté.</td>
-              </tr>
-              <tr>
-                <td class="py-2 pr-4 font-mono text-xs font-medium text-zinc-700 dark:text-zinc-300 align-top whitespace-nowrap">findings</td>
-                <td class="py-2 text-zinc-600 dark:text-zinc-400 leading-relaxed">Liste des violations avec ligne, motif suspect, règle violée et snippet do_pattern suggéré.</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="p-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm space-y-2">
+          <h3 class="font-semibold text-zinc-900 dark:text-zinc-100">GuardrailConfig (Nouveau)</h3>
+          <ul class="text-xs text-zinc-500 dark:text-zinc-400 space-y-1">
+            <li>• <code class="font-mono">project_path</code> : racine du projet inspecté</li>
+            <li>• <code class="font-mono">detected_agents</code> : .cursorrules, AGENTS.md, etc.</li>
+            <li>• <code class="font-mono">pre_commit_hook_installed</code> : statut du hook</li>
+            <li>• <code class="font-mono">strict_mode</code> : blocage sur sévérité critique</li>
+          </ul>
         </div>
       </div>
     </section>
 
     <!-- MILESTONES -->
-    <section>
-      <h2 class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
-        <i data-lucide="route" class="w-3.5 h-3.5"></i>Jalons de Réalisation (Milestones)
+    <section class="space-y-8">
+      <h2 class="text-2xl font-bold tracking-tight flex items-center gap-2">
+        <i data-lucide="milestone" class="w-6 h-6 text-emerald-500"></i>
+        Jalons de Construction (Milestones)
       </h2>
-      <div class="mt-5 space-y-5">
 
-        <!-- MILESTONE 1 -->
-        <article class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
-          <header class="flex items-center gap-3 p-5 border-b border-zinc-100 dark:border-zinc-800">
-            <span class="shrink-0 w-8 h-8 rounded-full bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 flex items-center justify-center text-sm font-semibold">1</span>
-            <h3 class="font-semibold text-lg text-zinc-900 dark:text-zinc-100">Fondations Schéma, Do/Don't Patterns & Recherche Sémantique</h3>
-          </header>
-          <div class="p-5">
-            <p class="text-zinc-600 dark:text-zinc-400 leading-relaxed">Enrichissement du schéma des règles de sécurité avec les patterns de code, indexation thématique et moteur de résolution sémantique en mémoire.</p>
-            <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div>
-                <h4 class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                  <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>Ce qui est construit
-                </h4>
-                <ul class="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300 list-none p-0">
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Extension du schéma Pydantic (champs do_pattern, dont_pattern, frameworks).</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Mise à niveau des règles existantes avec snippets de code sûrs et vulnérables.</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Moteur de recherche sémantique local-first (search.py) avec scoring de pertinence.</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Commande CLI interactive kb search &lt;query&gt; avec rendu Rich coloré.</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Tests unitaires complets sur le schéma et le moteur de recherche.</span></li>
-                </ul>
-              </div>
-              <div>
-                <h4 class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                  <i data-lucide="x-circle" class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500"></i>Exclu de ce jalon
-                </h4>
-                <ul class="mt-3 space-y-2 text-sm text-zinc-500 dark:text-zinc-400 list-none p-0">
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Le serveur de protocole MCP (prévu au Jalon 2).</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>L'outil d'audit de snippets en mémoire (prévu au Jalon 2).</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>La configuration externe pour clients tiers.</span></li>
-                </ul>
-              </div>
-            </div>
-            <div class="mt-5 rounded-md border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 p-4 text-sm text-emerald-900 dark:text-emerald-200">
-              <p class="flex items-start gap-2"><i data-lucide="flag" class="w-4 h-4 mt-0.5 shrink-0"></i><span><span class="font-semibold">Critère de validation :</span> Lancer <code class="font-mono text-xs">uv run kb search "JWT auth FastAPI"</code> affiche instantanément les règles applicables avec leurs patterns Do/Don't en console, et 100% des tests unitaires sont verts.</span></p>
-            </div>
-          </div>
-        </article>
+      <!-- Milestone 4 -->
+      <div class="p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm space-y-4">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300">Milestone 4</span>
+          <span class="text-xs text-zinc-500">FastMCP & Contrats</span>
+        </div>
+        <h3 class="text-xl font-bold">Proactive Shift-Left MCP & Security Contracts</h3>
+        <p class="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+          Rendre le serveur FastMCP impératif en amont (façon Context7) et implémenter les 4 contrats de sécurité normatifs par stack avec commande CLI <code class="text-xs font-mono">kb contract</code>.
+        </p>
+        <div class="text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-950 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800">
+          <strong>Critère de fin :</strong> L'outil <code class="font-mono">get_security_contract</code> retourne un contrat structuré et la CLI liste les 4 contrats disponibles.
+        </div>
+      </div>
 
-        <!-- MILESTONE 2 -->
-        <article class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
-          <header class="flex items-center gap-3 p-5 border-b border-zinc-100 dark:border-zinc-800">
-            <span class="shrink-0 w-8 h-8 rounded-full bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 flex items-center justify-center text-sm font-semibold">2</span>
-            <h3 class="font-semibold text-lg text-zinc-900 dark:text-zinc-100">Serveur MCP Natif pour Agents & Audit à la Volée</h3>
-          </header>
-          <div class="p-5">
-            <p class="text-zinc-600 dark:text-zinc-400 leading-relaxed">Implémentation du serveur FastMCP exposant les 3 outils essentiels d'interrogation et d'audit pour tout agent de code.</p>
-            <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div>
-                <h4 class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                  <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>Ce qui est construit
-                </h4>
-                <ul class="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300 list-none p-0">
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Serveur FastMCP stdio standard dans kb/src/kb/server.py.</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Outil resolve_security_topic(query) pour mapper les intentions de l'agent.</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Outil get_security_rules(topic, max_rules) taillé pour économiser le contexte.</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Outil audit_code_snippet(code, filename) analysant en mémoire le code généré.</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Commande CLI kb mcp démarrant le serveur.</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Tests unitaires simulant des appels d'outils MCP clients.</span></li>
-                </ul>
-              </div>
-              <div>
-                <h4 class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                  <i data-lucide="x-circle" class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500"></i>Exclu de ce jalon
-                </h4>
-                <ul class="mt-3 space-y-2 text-sm text-zinc-500 dark:text-zinc-400 list-none p-0">
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>L'expansion massive du corpus (réservée au Jalon 3).</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Les configurations prêtes à l'emploi multi-IDE.</span></li>
-                </ul>
-              </div>
-            </div>
-            <div class="mt-5 rounded-md border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 p-4 text-sm text-emerald-900 dark:text-emerald-200">
-              <p class="flex items-start gap-2"><i data-lucide="flag" class="w-4 h-4 mt-0.5 shrink-0"></i><span><span class="font-semibold">Critère de validation :</span> Le serveur démarré via <code class="font-mono text-xs">uv run kb mcp</code> traite avec succès les appels des 3 outils MCP et détecte immédiatement une faille simulée dans un snippet de test.</span></p>
-            </div>
-          </div>
-        </article>
+      <!-- Milestone 5 -->
+      <div class="p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm space-y-4">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300">Milestone 5</span>
+          <span class="text-xs text-zinc-500">CLI & Injonction</span>
+        </div>
+        <h3 class="text-xl font-bold">Project Guardrail CLI (`kb init-guardrail`)</h3>
+        <p class="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+          Permettre au développeur d'injecter en 1 commande les directives de sécurité obligatoires dans les fichiers d'instructions d'agents (.cursorrules, AGENTS.md, CLAUDE.md) sans écraser les règles existantes.
+        </p>
+        <div class="text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-950 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800">
+          <strong>Critère de fin :</strong> <code class="font-mono">kb init-guardrail . --stack fastapi-supabase-rag</code> injecte le bloc de sécurité délimité avec succès.
+        </div>
+      </div>
 
-        <!-- MILESTONE 3 -->
-        <article class="print-card rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
-          <header class="flex items-center gap-3 p-5 border-b border-zinc-100 dark:border-zinc-800">
-            <span class="shrink-0 w-8 h-8 rounded-full bg-zinc-900 dark:bg-zinc-100 text-zinc-50 dark:text-zinc-900 flex items-center justify-center text-sm font-semibold">3</span>
-            <h3 class="font-semibold text-lg text-zinc-900 dark:text-zinc-100">Expansion du Corpus & Packaging Zéro-Config</h3>
-          </header>
-          <div class="p-5">
-            <p class="text-zinc-600 dark:text-zinc-400 leading-relaxed">Enrichissement ciblé sur les angles morts des modèles d'IA, packaging universel et documentation d'onboarding pour tous les agents du marché.</p>
-            <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div>
-                <h4 class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                  <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400"></i>Ce qui est construit
-                </h4>
-                <ul class="mt-3 space-y-2 text-sm text-zinc-700 dark:text-zinc-300 list-none p-0">
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Packs de règles supplémentaires ancrés sur les failles LLMs récurrentes (Auth, RAG, API).</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Validation stricte des nouvelles citations à 100% au Grounding Judge.</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Snippets de configuration prêts à l'emploi pour Cursor, Claude Desktop, Claude Code et Antigravity.</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Packaging final pyproject.toml permettant l'exécution directe via uvx kb mcp.</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="check" class="w-3.5 h-3.5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400"></i><span>Test end-to-end complet avec un agent de codage réel.</span></li>
-                </ul>
-              </div>
-              <div>
-                <h4 class="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5">
-                  <i data-lucide="x-circle" class="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500"></i>Exclu de ce jalon
-                </h4>
-                <ul class="mt-3 space-y-2 text-sm text-zinc-500 dark:text-zinc-400 list-none p-0">
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Règles non ancrées dans des sources officielles.</span></li>
-                  <li class="flex items-start gap-2"><i data-lucide="minus" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i><span>Applications web ou interfaces SaaS tierces.</span></li>
-                </ul>
-              </div>
-            </div>
-            <div class="mt-5 rounded-md border-l-4 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 p-4 text-sm text-emerald-900 dark:text-emerald-200">
-              <p class="flex items-start gap-2"><i data-lucide="flag" class="w-4 h-4 mt-0.5 shrink-0"></i><span><span class="font-semibold">Critère de validation :</span> Un agent de code externe interroge KB via <code class="font-mono text-xs">uvx kb mcp</code>, reçoit les patterns sécurisés et passe la CI GitHub Actions avec succès.</span></p>
-            </div>
-          </div>
-        </article>
-
+      <!-- Milestone 6 -->
+      <div class="p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm space-y-4">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">Milestone 6</span>
+          <span class="text-xs text-zinc-500">Filet Git & Certificat</span>
+        </div>
+        <h3 class="text-xl font-bold">Git Pre-Commit Guard & Engineering Certificate (`kb guard` & `kb verify`)</h3>
+        <p class="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+          Garde-fou mécanique local via hook git pre-commit ultra-rapide bloquant les commits défectueux, et certification formelle d'auditabilité pour documenter la conformité industrielle du projet.
+        </p>
+        <div class="text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-950 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800">
+          <strong>Critère de fin :</strong> Le hook git intercepte un commit fautif et <code class="font-mono">kb verify</code> émet un certificat JSON et un badge de conformité vérifié.
+        </div>
       </div>
     </section>
 
-    <footer class="pt-8 border-t border-zinc-200 dark:border-zinc-800 text-xs text-zinc-500 dark:text-zinc-400">
-      Généré par <span class="font-medium">bm-prd-creator</span> · Farel Viaho · Ouvrez le premier jalon <code class="font-mono">prompt.md</code> pour débuter l'implémentation.
+    <!-- FOOTER -->
+    <footer class="pt-8 border-t border-zinc-200 dark:border-zinc-800 text-center text-xs text-zinc-500">
+      KB Context7 for Security · Farel Viaho · Second Cerveau & Ingénierie de la Confiance
     </footer>
   </main>
 
   <script>
-    (function () {
-      var html = document.documentElement;
-      var stored = localStorage.getItem('prd-theme');
-      var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-      var initial = stored ? stored : (prefersDark ? 'dark' : 'light');
-      if (initial === 'dark') html.classList.add('dark');
-      var btn = document.getElementById('theme-toggle');
-      if (btn) {
-        btn.addEventListener('click', function () {
-          var isDark = html.classList.toggle('dark');
-          localStorage.setItem('prd-theme', isDark ? 'dark' : 'light');
-        });
-      }
-      if (window.lucide) window.lucide.createIcons();
-    })();
+    lucide.createIcons();
+    const toggleBtn = document.getElementById('theme-toggle');
+    toggleBtn.addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
+    });
   </script>
 </body>
 </html>
