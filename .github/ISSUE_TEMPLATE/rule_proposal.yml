@@ -1,0 +1,58 @@
+name: Propose a New Rule
+description: Suggest a new security, architecture, or quality rule anchored in an authoritative source.
+title: "[Rule]: "
+labels: ["rule-proposal"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Every rule in this Knowledge Base must be grounded in an authoritative, publicly archived source (OWASP, NIST, RFC, CIS, Cloud documentation, etc.). Unsubstantiated rules will be rejected.
+  - type: input
+    id: source_id
+    attributes:
+      label: Source ID
+      description: ID from sources/registry.yaml (or provide repo URL if new source).
+      placeholder: "e.g. owasp-cheatsheets, rfc-oauth, fastapi"
+    validations:
+      required: true
+  - type: textarea
+    id: citation
+    attributes:
+      label: Verbatim Citation
+      description: Exact excerpt from the official source that justifies this rule.
+      placeholder: "Copy-paste exact normative quote..."
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - app-security
+        - authentication
+        - authorization
+        - ai-ml
+        - database
+        - devops
+        - api
+        - frontend
+        - network
+        - data-protection
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - critical
+        - high
+        - medium
+        - low
+    validations:
+      required: true
+  - type: textarea
+    id: explanation
+    attributes:
+      label: Rationale & Mechanics
+      description: Explain why this rule matters and how it can be mechanically detected or verified.

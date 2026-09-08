@@ -1,0 +1,472 @@
+# Pack CLI — outils en ligne de commande
+#
+# Ce pack couvre la surface propre a un programme lance depuis un terminal :
+# un process local, sans surface HTTP, dont les entrees arrivent par argv,
+# stdin, l'environnement et des chemins de fichiers fournis par l'utilisateur.
+#
+# Ce qui distingue un CLI d'un service web n'est pas la gravite, c'est le
+# vecteur. Un CLI n'a ni session, ni CORS, ni cookie — mais il compose des
+# commandes shell a partir d'arguments, lit des chemins que l'appelant choisit,
+# et voit ses arguments apparaitre dans `ps` et dans l'historique du shell.
+#
+# Les regles portent project_types: [cli, pipeline] quand elles valent pour
+# tout process local, et [cli] seul quand la ligne de commande est le vecteur.
+
+source_id: owasp-cheatsheets
+rules:
+
+  # ---------------------------------------------------------------------------
+  - id: app-security/command-injection/user-input-concatenated-into-shell
+    title: Ne jamais construire une commande shell par concatenation d'entree utilisateur
+    category: app-security
+    subcategory: command-injection
+    severity: critical
+    confidence: high
+    description: >
+      Un CLI qui compose une commande systeme en concatenant un argument recu
+      (argv, stdin, variable d'environnement) doit passer par une API qui separe
+      le programme de ses arguments, sans shell intermediaire.
+    rationale: >
+      Le shell interprete les metacaracteres `& | ; $ > < ` \ ! ' " ( )`. Un
+      argument contenant l'un d'eux ne complete plus la commande : il en ajoute
+      une seconde, qui s'execute avec les privileges du process appelant. En
+      Python, c'est exactement ce que `shell=True` reintroduit apres qu'une liste
+      d'arguments l'ait supprime.
+    remediation: >
+      Passer une liste d'arguments a `subprocess.run([...])` sans `shell=True`.
+      Bannir `os.system` et `os.popen`. Si le shell est inevitable, valider les
+      arguments contre une allowlist stricte avant de les composer.
+    context:
+      languages: [python, javascript, typescript]
+      project_types: [cli, pipeline, saas, api, ai-rag]
+    detection:
+      - kind: grep
+        pattern: "shell\\s*=\\s*True"
+        applies_to: ["**/*.py"]
+        note: subprocess avec interpretation shell
+      - kind: grep
+        pattern: "os\\.(system|popen)\\s*\\("
+        applies_to: ["**/*.py"]
+        note: appel shell direct
+      - kind: grep
+        pattern: "child_process\\.exec\\s*\\("
+        applies_to: ["**/*.js", "**/*.ts"]
+        note: exec passe par le shell, execFile non
+    autofix: review
+    vulnerable_example:
+      lang: python
+      code: |
+        subprocess.run(f"git clone {args.repo}", shell=True)
+        # args.repo = "x; rm -rf ~" execute deux commandes
+    fixed_example:
+      lang: python
+      code: |
+        subprocess.run(["git", "clone", "--", args.repo], shell=False, check=True)
+    evidence:
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.md
+        doc_sha256: "39c81f1c1518782027ff8c9b1aef2df05e14aabbf1953f398afd52ad635669ea"
+        quote: >-
+          Command injection (or OS Command Injection) is a type of injection where
+          software that constructs a system command using externally influenced input
+          does not correctly neutralize the input from special elements that can modify
+          the initially intended command.
+        url: https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html
+        anchor: Introduction
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.md
+        doc_sha256: "39c81f1c1518782027ff8c9b1aef2df05e14aabbf1953f398afd52ad635669ea"
+        quote: >-
+          The primary defense is to avoid calling OS commands directly. Built-in library
+          functions are a very good alternative to OS Commands, as they cannot be
+          manipulated to perform tasks other than those it is intended to do.
+        url: https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html
+        anchor: "Defense Option 1: Avoid calling OS commands directly"
+    cwe: [CWE-78]
+    owasp: ["A03:2021"]
+    tags: [cli, shell, subprocess, injection]
+    extracted_at: "2026-08-10"
+    extractor: claude-opus-4-6
+
+  # ---------------------------------------------------------------------------
+  - id: app-security/command-injection/user-input-passed-as-command-option
+    title: Terminer les options par -- avant toute valeur fournie par l'utilisateur
+    category: app-security
+    subcategory: command-injection
+    severity: high
+    confidence: high
+    description: >
+      Meme sans shell, une valeur utilisateur placee sur une ligne de commande
+      doit etre separee des options par le delimiteur `--`, sinon une valeur qui
+      commence par `-` est interpretee comme un drapeau du programme appele.
+    rationale: >
+      Echapper les metacaracteres ne protege que du shell, pas du programme
+      invoque. Une valeur comme `--output=/etc/cron.d/x` reste un argument
+      parfaitement valide : l'attaquant ne lance pas une seconde commande, il
+      detourne la premiere. C'est l'injection d'argument, et elle survit a
+      `escapeshellarg()` comme a une liste `subprocess`.
+    remediation: >
+      Inserer `--` entre les options fixes et les valeurs variables
+      (`["curl", "--", url]`). Coder en dur le binaire et ses drapeaux ; ne
+      jamais laisser l'utilisateur choisir l'executable.
+    context:
+      languages: [python, javascript, typescript]
+      project_types: [cli, pipeline]
+    detection:
+      - kind: grep
+        pattern: "subprocess\\.(run|call|check_output|Popen)\\s*\\(\\s*\\[[^\\]]*(args|argv|sys\\.argv|input|user)"
+        applies_to: ["**/*.py"]
+        note: valeur utilisateur dans une liste d'arguments — verifier la presence de --
+    autofix: review
+    vulnerable_example:
+      lang: python
+      code: |
+        subprocess.run(["curl", "-sS", url])
+        # url = "--output=/etc/cron.d/pwn" ecrit un fichier au lieu de telecharger
+    fixed_example:
+      lang: python
+      code: |
+        subprocess.run(["curl", "-sS", "--", url])
+    evidence:
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.md
+        doc_sha256: "39c81f1c1518782027ff8c9b1aef2df05e14aabbf1953f398afd52ad635669ea"
+        quote: >-
+          Every OS Command Injection is also an Argument Injection. In this type of
+          attacks, user input can be passed as arguments while executing a specific
+          command.
+        url: https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html
+        anchor: Argument Injection
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.md
+        doc_sha256: "39c81f1c1518782027ff8c9b1aef2df05e14aabbf1953f398afd52ad635669ea"
+        quote: >-
+          The first -- argument that is not an option-argument should be accepted as a
+          delimiter indicating the end of options. Any following arguments should be
+          treated as operands, even if they begin with the '-' character.
+        url: https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html
+        anchor: Layer 2
+    cwe: [CWE-88]
+    tags: [cli, argv, argument-injection]
+    extracted_at: "2026-08-10"
+    extractor: claude-opus-4-6
+
+  # ---------------------------------------------------------------------------
+  - id: app-security/command-injection/executable-chosen-by-user-input
+    title: Coder en dur l'executable appele plutot que de le lire depuis l'entree
+    category: app-security
+    subcategory: command-injection
+    severity: high
+    confidence: high
+    description: >
+      Le nom du programme lance par un CLI doit etre fixe dans le code ou
+      resolu contre une liste d'autorisation explicite, jamais compose a partir
+      d'un argument, d'une variable d'environnement ou d'un fichier de config.
+    rationale: >
+      Si l'appelant choisit le binaire, aucune validation d'argument ne compte :
+      il ne detourne plus la commande, il en designe une autre. La commande
+      elle-meme doit etre validee contre une liste d'autorisation, au meme titre
+      que ses arguments.
+    remediation: >
+      Definir un dictionnaire des commandes permises et n'accepter qu'une cle de
+      ce dictionnaire. Refuser toute valeur absente de la liste au lieu de la
+      nettoyer.
+    context:
+      languages: [python, javascript, typescript]
+      project_types: [cli, pipeline]
+    detection:
+      - kind: grep
+        pattern: "subprocess\\.(run|Popen|call)\\s*\\(\\s*(args\\.|os\\.environ|sys\\.argv|config\\[)"
+        applies_to: ["**/*.py"]
+        note: le binaire lui-meme provient d'une entree
+    autofix: review
+    vulnerable_example:
+      lang: python
+      code: |
+        subprocess.run([args.tool, "--version"])
+    fixed_example:
+      lang: python
+      code: |
+        TOOLS = {"git": "/usr/bin/git", "docker": "/usr/bin/docker"}
+        if args.tool not in TOOLS:
+            raise SystemExit(f"outil non autorise : {args.tool}")
+        subprocess.run([TOOLS[args.tool], "--version"])
+    evidence:
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.md
+        doc_sha256: "39c81f1c1518782027ff8c9b1aef2df05e14aabbf1953f398afd52ad635669ea"
+        quote: >-
+          When it comes to the **commands** used, these must be validated against a list
+          of allowed commands.
+        url: https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html
+        anchor: Layer 2
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.md
+        doc_sha256: "39c81f1c1518782027ff8c9b1aef2df05e14aabbf1953f398afd52ad635669ea"
+        quote: >-
+          **Hardcode the command**: never allow the user to choose which executable to run.
+        url: https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html
+        anchor: PHP
+    cwe: [CWE-78]
+    tags: [cli, allowlist, subprocess]
+    extracted_at: "2026-08-10"
+    extractor: claude-opus-4-6
+
+  # ---------------------------------------------------------------------------
+  - id: app-security/path-traversal/user-controlled-path-not-confined
+    title: Confiner tout chemin de fichier construit a partir d'une entree utilisateur
+    category: app-security
+    subcategory: path-traversal
+    severity: high
+    confidence: high
+    description: >
+      Un chemin bati a partir d'un argument ou d'un nom de fichier fourni doit
+      etre resolu en chemin canonique puis verifie comme etant sous un repertoire
+      de base autorise, avant toute lecture ou ecriture.
+    rationale: >
+      `os.path.join(base, user)` ne confine rien : si `user` est absolu, la base
+      est ecartee ; s'il contient `../`, la resolution sort du repertoire. Un CLI
+      tourne avec les droits de celui qui le lance — souvent son poste de travail
+      entier, parfois root en CI. La resolution canonique est la seule verification
+      qui tienne.
+    remediation: >
+      Resoudre avec `Path(base).resolve()` et `Path(base, user).resolve()`, puis
+      exiger `resolved.is_relative_to(base)`. Preferer un nom genere en interne au
+      nom fourni par l'utilisateur.
+    context:
+      languages: [python, javascript, typescript]
+      project_types: [cli, pipeline, saas, api]
+    detection:
+      - kind: grep
+        pattern: "os\\.path\\.join\\s*\\([^)]*(args\\.|sys\\.argv|input\\(|request\\.)"
+        applies_to: ["**/*.py"]
+        note: chemin compose avec une entree, sans resolution canonique
+      - kind: grep
+        pattern: "open\\s*\\(\\s*(args\\.|sys\\.argv)"
+        applies_to: ["**/*.py"]
+        note: ouverture directe d'un chemin fourni
+    autofix: review
+    vulnerable_example:
+      lang: python
+      code: |
+        dest = os.path.join(OUTPUT_DIR, args.name)
+        open(dest, "w").write(data)   # args.name = "../../.ssh/authorized_keys"
+    fixed_example:
+      lang: python
+      code: |
+        base = Path(OUTPUT_DIR).resolve()
+        dest = (base / args.name).resolve()
+        if not dest.is_relative_to(base):
+            raise SystemExit("chemin hors du repertoire autorise")
+        dest.write_text(data)
+    evidence:
+      - source_id: owasp-asvs
+        doc_path: owasp-asvs/5.0/en/0x14-V5-File-Handling.md
+        doc_sha256: "079a51123e5156a5ffc6329f266d49752cb60f6b780899484c3f1cfde3734ebb"
+        quote: >-
+          Verify that when the application creates file paths for file operations,
+          instead of user-submitted filenames, it uses internally generated or trusted
+          data, or if user-submitted filenames or file metadata must be used, strict
+          validation and sanitization must be applied.
+        url: https://github.com/OWASP/ASVS/blob/master/5.0/en/0x14-V5-File-Handling.md
+        anchor: V5.3 File Storage
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/Input_Validation_Cheat_Sheet.md
+        doc_sha256: "474509f8bc6d06dab110bad0d0d5055cc9c6f2a63d2f464ce2966be634246772"
+        quote: >-
+          The client should not be able to specify the file path; it should be defined
+          by the server.
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
+        anchor: File Upload Validation
+    cwe: [CWE-22]
+    tags: [cli, path-traversal, filesystem]
+    extracted_at: "2026-08-10"
+    extractor: claude-opus-4-6
+
+  # ---------------------------------------------------------------------------
+  - id: app-security/secrets/secret-passed-as-command-line-argument
+    title: Ne jamais recevoir un secret par argument de ligne de commande
+    category: app-security
+    subcategory: secrets
+    severity: high
+    confidence: medium
+    description: >
+      Un CLI ne doit pas accepter cle d'API, mot de passe ou jeton via une option
+      de ligne de commande. Il les lit depuis un fichier a permissions restreintes,
+      l'entree standard, ou un gestionnaire de secrets.
+    rationale: >
+      Les arguments d'un process sont lisibles par tout utilisateur de la machine
+      (`ps aux`, `/proc/<pid>/cmdline`), et le shell les archive en clair dans son
+      historique. Les variables d'environnement sont a peine meilleures : OWASP
+      note qu'elles sont generalement accessibles a tous les process et peuvent se
+      retrouver dans les journaux ou un vidage systeme.
+    remediation: >
+      Proposer `--token-file` plutot que `--token`, lire sur stdin quand le
+      terminal est interactif, ou deleguer a un gestionnaire de secrets. Si une
+      variable d'environnement reste le seul choix, le documenter comme un repli.
+    context:
+      languages: [python, javascript, typescript]
+      project_types: [cli, pipeline]
+    detection:
+      - kind: grep
+        pattern: "add_argument\\s*\\(\\s*[\"']--(token|password|secret|api-key|apikey|passwd)"
+        applies_to: ["**/*.py"]
+        note: argparse expose un secret en clair sur la ligne de commande
+      - kind: grep
+        pattern: "\\.option\\s*\\(\\s*[\"']--(token|password|secret|api-key)"
+        applies_to: ["**/*.js", "**/*.ts", "**/*.py"]
+        note: click/commander exposent un secret en option
+    autofix: review
+    vulnerable_example:
+      lang: python
+      code: |
+        parser.add_argument("--api-key", required=True)
+        # visible dans `ps aux` et dans ~/.bash_history
+    fixed_example:
+      lang: python
+      code: |
+        parser.add_argument("--api-key-file", type=Path)
+        key = args.api_key_file.read_text().strip() if args.api_key_file else os.environ.get("API_KEY")
+    evidence:
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/Secrets_Management_Cheat_Sheet.md
+        doc_sha256: "098b2e35ca5b9846bb35cb80fa9eef59aa97d76e10a12a5ff25b121f2c5770bd"
+        quote: >-
+          Additionally, environment variables are generally accessible to all processes
+          and may be included in logs or system dumps. Using environment variables is
+          therefore not recommended unless the other methods are not possible.
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
+        anchor: "5.1 Injection of Secrets (file, in-memory)"
+    cwe: [CWE-214]
+    tags: [cli, secrets, argv]
+    extracted_at: "2026-08-10"
+    extractor: claude-opus-4-6
+
+  # ---------------------------------------------------------------------------
+  - id: app-security/deserialization/untrusted-data-loaded-with-pickle-or-yaml
+    title: Ne jamais deserialiser un fichier local avec pickle ou yaml.load
+    category: app-security
+    subcategory: deserialization
+    severity: critical
+    confidence: high
+    description: >
+      Un CLI qui lit un cache, un etat ou une configuration depuis le disque doit
+      utiliser un format de donnees inerte (JSON, `yaml.safe_load`), jamais
+      `pickle.load` ni `yaml.load` sans chargeur sur.
+    rationale: >
+      `pickle` et `yaml.load` reconstruisent des objets arbitraires : le document
+      `!!python/object/apply:os.system ['ipconfig']` execute la commande au
+      chargement. Pour un CLI, le fichier n'a pas besoin de venir du reseau — un
+      cache dans un repertoire partage, un artefact de CI ou un fichier de projet
+      clone suffisent a porter la charge.
+    remediation: >
+      Remplacer `yaml.load(f)` par `yaml.safe_load(f)`, et `pickle` par JSON.
+      Si un format binaire est indispensable, signer le fichier et verifier la
+      signature avant de le charger.
+    context:
+      languages: [python]
+      project_types: [cli, pipeline, saas, api, ai-rag]
+    detection:
+      - kind: grep
+        pattern: "pickle\\.(load|loads)\\s*\\("
+        applies_to: ["**/*.py"]
+        note: deserialisation arbitraire
+      - kind: grep
+        pattern: "yaml\\.load\\s*\\((?![^)]*SafeLoader)"
+        applies_to: ["**/*.py"]
+        note: yaml.load sans SafeLoader
+    autofix: review
+    vulnerable_example:
+      lang: python
+      code: |
+        state = pickle.load(open(CACHE_PATH, "rb"))
+        config = yaml.load(open("config.yaml"))
+    fixed_example:
+      lang: python
+      code: |
+        state = json.loads(Path(CACHE_PATH).read_text())
+        config = yaml.safe_load(Path("config.yaml").read_text())
+    evidence:
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/Deserialization_Cheat_Sheet.md
+        doc_sha256: "16b75d075f4c4ab19f1cb46763ec8697aeb24d7660cbcd6ebb5a1d6f15b3f0f4"
+        quote: >-
+          The following API in Python will be vulnerable to serialization attack. Search
+          code for the pattern below.
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
+        anchor: "Python: Clear-box Review"
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/Deserialization_Cheat_Sheet.md
+        doc_sha256: "16b75d075f4c4ab19f1cb46763ec8697aeb24d7660cbcd6ebb5a1d6f15b3f0f4"
+        quote: >-
+          document = "!!python/object/apply:os.system ['ipconfig']"
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
+        anchor: "Python: PyYAML with load"
+    cwe: [CWE-502]
+    tags: [cli, pickle, yaml, deserialization]
+    extracted_at: "2026-08-10"
+    extractor: claude-opus-4-6
+
+  # ---------------------------------------------------------------------------
+  - id: devops/dependencies/dependencies-not-pinned-to-verified-version
+    title: Epingler les dependances a une version verifiee via un fichier de verrouillage
+    category: devops
+    subcategory: dependencies
+    severity: medium
+    confidence: high
+    description: >
+      Un outil distribue doit resoudre ses dependances de maniere deterministe :
+      un fichier de verrouillage commite (`uv.lock`, `poetry.lock`,
+      `package-lock.json`) et une installation qui le respecte.
+    rationale: >
+      Une contrainte ouverte dans un `requirements.txt` — le seul artefact de
+      resolution dans ce mode — laisse chaque installation choisir une version
+      differente. Une version compromise en amont entre alors dans l'outil sans
+      qu'aucun changement local ne l'ait demande. Pour un CLI installe sur des
+      postes de developpeurs ou en CI, c'est une execution de code sur des
+      machines de confiance.
+    remediation: >
+      Commiter le fichier de verrouillage et installer avec `uv sync --frozen`,
+      `poetry install`, ou `npm ci` — jamais `pip install -r` ni `npm install`
+      dans un contexte reproductible. Faire remonter les mises a jour par des
+      changements de lock explicites et relus.
+    context:
+      languages: [python, javascript, typescript]
+      project_types: [cli, pipeline, saas, api, ai-rag]
+    detection:
+      # NB — on ne teste PAS la presence d'un lock a cote du manifeste : une
+      # detection `absent` cherche un motif MANQUANT DANS LE TEXTE des fichiers
+      # cadres, elle ne sait pas interroger le systeme de fichiers. Un motif
+      # `^uv\.lock` applique a pyproject.toml ne matcherait jamais et
+      # accuserait tous les projets, lock commite ou non.
+      #
+      # On ne signale pas non plus `>=` dans pyproject.toml : une contrainte
+      # large dans le manifeste AVEC un lock commite est la pratique correcte,
+      # et c'est celle que la source decrit. Seul requirements.txt fait
+      # exception — il tient lieu de resolution, donc un `>=` y est vraiment
+      # une resolution non deterministe.
+      - kind: grep
+        pattern: "^\\s*[a-zA-Z0-9_.-]+\\s*(>=|>|\\*|~=)"
+        applies_to: ["**/requirements*.txt"]
+        note: contrainte ouverte la ou requirements.txt tient lieu de verrouillage
+      - kind: grep
+        pattern: "(pip\\s+install\\s+-r|npm\\s+install(?!\\s+-g))"
+        applies_to: ["**/Dockerfile*", "**/*.yml", "**/*.yaml", "**/Makefile", "**/*.sh"]
+        note: installation qui ignore le verrouillage — attendu `npm ci` / `uv sync --frozen`
+    autofix: never
+    evidence:
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/Software_Supply_Chain_Security_Cheat_Sheet.md
+        doc_sha256: "d75f515a2518562968355b343879fb9184c5f1e9db276e0509b4455c65f4ab10"
+        quote: >-
+          To reduce the likelihood that a compromised or vulnerable version is
+          unwittingly pulled into an application, one should limit the applications
+          dependencies to a specific version that has been previously verified as
+          legitimate and secure.
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Software_Supply_Chain_Security_Cheat_Sheet.html
+        anchor: Lockfile/Version Pinning
+    cwe: [CWE-1104]
+    owasp: ["A03:2025"]
+    tags: [cli, dependencies, supply-chain, lockfile]
+    extracted_at: "2026-08-10"
+    extractor: claude-opus-4-6

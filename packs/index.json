@@ -1,0 +1,366 @@
+{
+  "generated_at": "2026-09-08T09:24:06+00:00",
+  "rule_count": 47,
+  "categories": {
+    "ai-ml": {
+      "file": "by-category/ai-ml.json",
+      "count": 15,
+      "severities": {
+        "critical": 3,
+        "high": 7,
+        "medium": 5
+      }
+    },
+    "api": {
+      "file": "by-category/api.json",
+      "count": 1,
+      "severities": {
+        "high": 1
+      }
+    },
+    "app-security": {
+      "file": "by-category/app-security.json",
+      "count": 9,
+      "severities": {
+        "critical": 2,
+        "high": 6,
+        "medium": 1
+      }
+    },
+    "authentication": {
+      "file": "by-category/authentication.json",
+      "count": 5,
+      "severities": {
+        "critical": 2,
+        "high": 1,
+        "medium": 2
+      }
+    },
+    "authorization": {
+      "file": "by-category/authorization.json",
+      "count": 2,
+      "severities": {
+        "critical": 2
+      }
+    },
+    "data-protection": {
+      "file": "by-category/data-protection.json",
+      "count": 1,
+      "severities": {
+        "high": 1
+      }
+    },
+    "database": {
+      "file": "by-category/database.json",
+      "count": 6,
+      "severities": {
+        "critical": 3,
+        "high": 2,
+        "medium": 1
+      }
+    },
+    "devops": {
+      "file": "by-category/devops.json",
+      "count": 6,
+      "severities": {
+        "critical": 2,
+        "high": 1,
+        "medium": 3
+      }
+    },
+    "frontend": {
+      "file": "by-category/frontend.json",
+      "count": 1,
+      "severities": {
+        "high": 1
+      }
+    },
+    "network": {
+      "file": "by-category/network.json",
+      "count": 1,
+      "severities": {
+        "high": 1
+      }
+    }
+  },
+  "profiles": {
+    "static-site": {
+      "file": "profiles/static-site.json",
+      "count": 7,
+      "critical": 2
+    },
+    "saas": {
+      "file": "profiles/saas.json",
+      "count": 44,
+      "critical": 14
+    },
+    "ai-rag": {
+      "file": "profiles/ai-rag.json",
+      "count": 42,
+      "critical": 13
+    },
+    "api": {
+      "file": "profiles/api.json",
+      "count": 39,
+      "critical": 14
+    },
+    "pipeline": {
+      "file": "profiles/pipeline.json",
+      "count": 17,
+      "critical": 6
+    },
+    "cli": {
+      "file": "profiles/cli.json",
+      "count": 16,
+      "critical": 6
+    },
+    "mobile": {
+      "file": "profiles/mobile.json",
+      "count": 0,
+      "critical": 0
+    }
+  },
+  "routing": {
+    "languages": {
+      "javascript": [
+        "KB-0009",
+        "KB-0018",
+        "KB-0036",
+        "KB-0008",
+        "KB-0017",
+        "KB-0019",
+        "KB-0024",
+        "KB-0025",
+        "KB-0046",
+        "KB-0030",
+        "KB-0041"
+      ],
+      "python": [
+        "KB-0007",
+        "KB-0009",
+        "KB-0015",
+        "KB-0018",
+        "KB-0020",
+        "KB-0027",
+        "KB-0029",
+        "KB-0031",
+        "KB-0032",
+        "KB-0036",
+        "KB-0039",
+        "KB-0045",
+        "KB-0001",
+        "KB-0003",
+        "KB-0005",
+        "KB-0010",
+        "KB-0011",
+        "KB-0013",
+        "KB-0016",
+        "KB-0017",
+        "KB-0019",
+        "KB-0022",
+        "KB-0023",
+        "KB-0024",
+        "KB-0025",
+        "KB-0028",
+        "KB-0033",
+        "KB-0047",
+        "KB-0002",
+        "KB-0004",
+        "KB-0006",
+        "KB-0012",
+        "KB-0014",
+        "KB-0021",
+        "KB-0026",
+        "KB-0030",
+        "KB-0041"
+      ],
+      "sql": [
+        "KB-0007",
+        "KB-0015",
+        "KB-0037",
+        "KB-0039",
+        "KB-0003",
+        "KB-0035",
+        "KB-0038",
+        "KB-0034"
+      ],
+      "typescript": [
+        "KB-0007",
+        "KB-0009",
+        "KB-0015",
+        "KB-0018",
+        "KB-0027",
+        "KB-0029",
+        "KB-0031",
+        "KB-0032",
+        "KB-0036",
+        "KB-0039",
+        "KB-0045",
+        "KB-0001",
+        "KB-0003",
+        "KB-0005",
+        "KB-0008",
+        "KB-0010",
+        "KB-0011",
+        "KB-0013",
+        "KB-0016",
+        "KB-0017",
+        "KB-0019",
+        "KB-0022",
+        "KB-0023",
+        "KB-0024",
+        "KB-0025",
+        "KB-0028",
+        "KB-0033",
+        "KB-0046",
+        "KB-0047",
+        "KB-0002",
+        "KB-0004",
+        "KB-0006",
+        "KB-0012",
+        "KB-0014",
+        "KB-0021",
+        "KB-0026",
+        "KB-0030",
+        "KB-0041"
+      ]
+    },
+    "frameworks": {
+      "express": [
+        "KB-0027",
+        "KB-0031",
+        "KB-0032",
+        "KB-0005",
+        "KB-0016",
+        "KB-0022",
+        "KB-0021",
+        "KB-0030"
+      ],
+      "fastapi": [
+        "KB-0007",
+        "KB-0027",
+        "KB-0031",
+        "KB-0032",
+        "KB-0039",
+        "KB-0005",
+        "KB-0011",
+        "KB-0013",
+        "KB-0016",
+        "KB-0022",
+        "KB-0006",
+        "KB-0021",
+        "KB-0026",
+        "KB-0030"
+      ],
+      "langchain": [
+        "KB-0015",
+        "KB-0011",
+        "KB-0013"
+      ],
+      "llamaindex": [
+        "KB-0015",
+        "KB-0011",
+        "KB-0013"
+      ],
+      "next": [
+        "KB-0027",
+        "KB-0031",
+        "KB-0032",
+        "KB-0036",
+        "KB-0005",
+        "KB-0008",
+        "KB-0022",
+        "KB-0046",
+        "KB-0021",
+        "KB-0026",
+        "KB-0030"
+      ],
+      "prisma": [
+        "KB-0039",
+        "KB-0016"
+      ],
+      "pydantic": [
+        "KB-0016",
+        "KB-0006"
+      ],
+      "react": [
+        "KB-0036",
+        "KB-0008",
+        "KB-0046"
+      ],
+      "sqlalchemy": [
+        "KB-0007",
+        "KB-0039"
+      ],
+      "svelte": [
+        "KB-0046"
+      ],
+      "vite": [
+        "KB-0036"
+      ],
+      "vue": [
+        "KB-0008",
+        "KB-0046"
+      ],
+      "zod": [
+        "KB-0006"
+      ]
+    },
+    "platforms": {
+      "docker": [
+        "KB-0040"
+      ],
+      "github-actions": [
+        "KB-0043",
+        "KB-0042",
+        "KB-0044"
+      ],
+      "pgvector": [
+        "KB-0015"
+      ],
+      "postgresql": [
+        "KB-0007",
+        "KB-0015",
+        "KB-0031",
+        "KB-0032",
+        "KB-0037",
+        "KB-0039",
+        "KB-0003",
+        "KB-0035",
+        "KB-0038"
+      ],
+      "railway": [
+        "KB-0040"
+      ],
+      "supabase": [
+        "KB-0007",
+        "KB-0015",
+        "KB-0031",
+        "KB-0032",
+        "KB-0036",
+        "KB-0037",
+        "KB-0039",
+        "KB-0003",
+        "KB-0035",
+        "KB-0038",
+        "KB-0034"
+      ]
+    }
+  },
+  "severity_totals": {
+    "critical": 14,
+    "high": 21,
+    "medium": 12
+  },
+  "autofix_totals": {
+    "review": 25,
+    "never": 22
+  },
+  "sources_used": {
+    "owasp-llm-top10": 27,
+    "owasp-cheatsheets": 45,
+    "supabase": 10,
+    "owasp-asvs": 1,
+    "fastapi": 4
+  }
+}

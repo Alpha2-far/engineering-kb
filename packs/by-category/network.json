@@ -1,0 +1,95 @@
+{
+  "category": "network",
+  "generated_at": "2026-09-08T09:24:06+00:00",
+  "count": 1,
+  "rules": [
+    {
+      "id": "network/ssrf/outbound-url-not-allowlisted",
+      "title": "Restreindre les requetes sortantes a une liste d'hotes autorisee",
+      "category": "network",
+      "subcategory": "ssrf",
+      "severity": "high",
+      "confidence": "high",
+      "description": "Quand l'application effectue une requete vers une URL derivee d'une entree externe, l'hote doit etre valide contre une liste d'autorisation ; une liste d'interdiction ne suffit pas.",
+      "rationale": "Le serveur applicatif atteint des ressources que le client ne peut pas atteindre : reseau interne, service de metadonnees de l'hebergeur, bases sans exposition publique. Une URL controlee par un tiers transforme donc l'application en relais vers ce perimetre. Les listes d'interdiction se contournent par les redirections, les notations d'adresse alternatives et les noms qui resolvent vers une adresse privee.",
+      "remediation": "Construire la liste des hotes legitimes, comparer strictement apres resolution, refuser les redirections vers un hote hors liste, et bloquer les plages d'adresses privees et de bouclage. Si le domaine fonctionnel n'admet pas de liste fermee, isoler l'appel dans un composant sans acces au reseau interne.",
+      "context": {
+        "languages": [
+          "python",
+          "typescript"
+        ],
+        "frameworks": [],
+        "platforms": [],
+        "project_types": [
+          "saas",
+          "api",
+          "ai-rag",
+          "pipeline"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "(?i)(requests|httpx|aiohttp)\\.(get|post|put|request)\\s*\\(\\s*(url|target|link|endpoint|\\w*_url)\\b",
+          "applies_to": [
+            "**/*.py"
+          ],
+          "note": "Requete sortante vers une URL variable."
+        },
+        {
+          "kind": "grep",
+          "pattern": "(?i)\\bfetch\\s*\\(\\s*(url|target|link|endpoint|\\w*Url)\\b",
+          "applies_to": [
+            "**/*.ts",
+            "**/*.js",
+            "**/*.tsx"
+          ]
+        }
+      ],
+      "autofix": "never",
+      "vulnerable_example": {
+        "lang": "python",
+        "code": "@router.post(\"/importer\")\nasync def importer(url: str):\n    return (await httpx.AsyncClient().get(url)).text\n",
+        "explanation": "L'appelant fait lire au serveur le service de metadonnees de l'hebergeur et recupere des identifiants d'instance."
+      },
+      "fixed_example": {
+        "lang": "python",
+        "code": "HOTES_AUTORISES = {\"api.partenaire.com\", \"cdn.partenaire.com\"}\n\n@router.post(\"/importer\")\nasync def importer(url: str):\n    hote = urlparse(url).hostname\n    if hote not in HOTES_AUTORISES:          # liste d'autorisation, pas d'interdiction\n        raise HTTPException(400, \"hote non autorise\")\n    async with httpx.AsyncClient(follow_redirects=False) as c:\n        return (await c.get(url)).text\n",
+        "explanation": "Seuls des hotes connus sont joignables, et une redirection ne peut pas deplacer la cible."
+      },
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.md",
+          "doc_sha256": "1af95247faed3376bbc090ab6257a41097d26f94eb360f46b8e1ce43371376c8",
+          "quote": "Build an allowlist with all the domain names of every identified and trusted applications.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html",
+          "anchor": "Case 1 / Application can send request only to identified and trusted applications"
+        },
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.md",
+          "doc_sha256": "1af95247faed3376bbc090ab6257a41097d26f94eb360f46b8e1ce43371376c8",
+          "quote": "**Deny-lists are bypass-prone. Prefer allow-lists.**",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html",
+          "anchor": "Deny-list guidance"
+        }
+      ],
+      "tags": [
+        "ssrf",
+        "reseau",
+        "validation",
+        "cloud"
+      ],
+      "cwe": [
+        "CWE-918"
+      ],
+      "owasp": [
+        "A10:2021"
+      ],
+      "extracted_at": "2026-08-01",
+      "extractor": "claude-opus-5",
+      "ref": "KB-0047"
+    }
+  ]
+}

@@ -1,0 +1,544 @@
+# Pack stack — Supabase / Postgres / FastAPI
+#
+# Ce pack couvre la pile reellement en service : Python/FastAPI + Supabase pour
+# les systemes IA, avec Postgres en dessous. Il se distingue des packs OWASP par
+# sa source : ce sont les editeurs eux-memes qui documentent ici le mode d'emploi
+# sur de leur propre produit. Une regle ancree dans la doc Supabase pese autant
+# qu'une regle OWASP, et elle est plus specifique.
+#
+# Perimetre volontairement etroit. La doc Supabase et FastAPI archivees couvrent
+# des centaines de pages ; seules celles dont le non-respect casse la confidentialite
+# entre clients ou expose un secret sont extraites. Les guides de mise en route,
+# de tarification ou de migration ne produisent pas de regle : ils ne se declenchent
+# sur aucun code.
+#
+# Le noyau du pack est l'isolation par RLS. C'est la question centrale pour un
+# produit qui heberge les dossiers de plusieurs cabinets dans une meme base : une
+# table sans RLS dans le schema expose est lisible depuis le navigateur par
+# n'importe quel porteur de la cle publique. Ce n'est pas une faille a exploiter,
+# c'est le fonctionnement normal du produit quand on oublie une ligne.
+
+version: 1
+rules:
+  - id: database/rls/table-in-exposed-schema-without-rls
+    title: Activer RLS sur toute table d'un schema expose par l'API
+    category: database
+    subcategory: rls
+    severity: critical
+    confidence: high
+    description: >-
+      Toute table creee dans un schema expose par l'API — le schema public par
+      defaut — doit avoir la securite au niveau des lignes activee, et les
+      privileges accordes role par role.
+    rationale: >-
+      Le modele Supabase repose sur un acces direct depuis le navigateur : la cle
+      publique est, par construction, entre les mains de tous les utilisateurs.
+      Ce qui separe les donnees d'un cabinet de celles d'un autre n'est donc pas
+      le reseau ni le code applicatif, c'est uniquement la politique RLS. Une table
+      creee en SQL brut n'en a aucune : elle est integralement lisible par toute
+      personne detenant la cle publique. L'editeur de tables du tableau de bord
+      active RLS automatiquement, ce qui rend l'oubli invisible jusqu'au jour ou
+      la table a ete creee par migration.
+    remediation: >-
+      Faire suivre chaque create table d'un alter table enable row level security
+      dans la meme migration, puis ecrire les politiques. Verifier en revue que
+      toute migration ajoutant une table dans le schema public comporte les deux.
+    context:
+      languages: [sql]
+      platforms: [supabase, postgresql]
+      project_types: [saas, api, ai-rag]
+    detection:
+      - kind: grep
+        pattern: '(?i)create\s+table\s+(if\s+not\s+exists\s+)?(public\.)?[\w"]+'
+        applies_to: ['**/migrations/**/*.sql', '**/supabase/**/*.sql', '**/*.sql']
+        note: >-
+          Creation de table. Verifier qu'un enable row level security la suit dans
+          la meme migration.
+      - kind: absent
+        pattern: '(?i)enable\s+row\s+level\s+security'
+        applies_to: ['**/migrations/**/*.sql', '**/supabase/migrations/*.sql']
+        note: Migration creant des tables sans jamais activer RLS.
+    autofix: never
+    vulnerable_example:
+      lang: sql
+      code: |
+        create table public.dossiers (
+          id uuid primary key default gen_random_uuid(),
+          cabinet_id uuid not null,
+          contenu text
+        );
+        -- RLS jamais activee : la table est lisible par tout porteur de la cle publique.
+      explanation: >-
+        Un client du produit lit les dossiers de tous les autres cabinets depuis
+        la console de son navigateur.
+    fixed_example:
+      lang: sql
+      code: |
+        create table public.dossiers (
+          id uuid primary key default gen_random_uuid(),
+          cabinet_id uuid not null,
+          contenu text
+        );
+
+        alter table public.dossiers enable row level security;
+
+        create policy "lecture limitee au cabinet"
+          on public.dossiers
+          for select
+          to authenticated
+          using ( cabinet_id = (select auth.jwt() ->> 'cabinet_id')::uuid );
+      explanation: >-
+        La base elle-meme refuse les lignes hors perimetre, quel que soit le code
+        appelant.
+    evidence:
+      - source_id: supabase
+        doc_path: supabase/apps/docs/content/guides/database/postgres/row-level-security.mdx
+        doc_sha256: 92fac76180dbef5f26fd034eccf44cb38c63a868c1cb7ea97d0f6ee73b8e4982
+        anchor: Row Level Security in Supabase
+        url: https://supabase.com/docs/guides/database/postgres/row-level-security
+        quote: |-
+          RLS _must_ always be enabled on any tables stored in an exposed schema. By default, this is the `public` schema.
+      - source_id: supabase
+        doc_path: supabase/apps/docs/content/guides/database/postgres/row-level-security.mdx
+        doc_sha256: 92fac76180dbef5f26fd034eccf44cb38c63a868c1cb7ea97d0f6ee73b8e4982
+        anchor: Row Level Security in Supabase
+        url: https://supabase.com/docs/guides/database/postgres/row-level-security
+        quote: |-
+          RLS is enabled by default on tables created with the Table Editor in the dashboard. If you create one in raw SQL or with the SQL editor, remember to enable RLS yourself and grant only the permissions each Postgres role needs.
+    tags: [supabase, rls, isolation, multi-tenant, postgres]
+    cwe: ['CWE-284', 'CWE-732']
+    owasp: ['A01:2021']
+    extracted_at: '2026-08-01'
+    extractor: claude-opus-5
+
+  - id: database/rls/service-key-used-outside-server
+    title: Ne jamais exposer la cle de service au navigateur
+    category: database
+    subcategory: rls
+    severity: critical
+    confidence: high
+    description: >-
+      La cle de service Supabase, qui contourne RLS, ne doit apparaitre ni dans du
+      code client, ni dans une variable d'environnement prefixee pour le
+      navigateur. Elle reste sur le serveur, pour des taches d'administration.
+    rationale: >-
+      Cette cle annule le seul mecanisme qui separe les locataires : elle donne
+      lecture et ecriture sur toutes les lignes de toutes les tables. Livree au
+      navigateur, elle est lisible dans le paquet compile par n'importe quel
+      utilisateur, et la base entiere devient publique. Les prefixes d'exposition
+      des frameworks front — NEXT_PUBLIC_, VITE_, REACT_APP_ — inscrivent la valeur
+      dans le paquet sans avertissement.
+    remediation: >-
+      Reserver la cle de service au code serveur, sans prefixe d'exposition. Cote
+      navigateur, utiliser exclusivement la cle publique, dont la surface est
+      bornee par les politiques RLS. Toute cle ayant ete exposee est consideree
+      comme compromise et remplacee.
+    context:
+      languages: [typescript, javascript, python]
+      platforms: [supabase]
+      frameworks: [next, react, vite]
+      project_types: [saas, api, ai-rag]
+    detection:
+      - kind: grep
+        pattern: '(?i)(NEXT_PUBLIC|VITE|REACT_APP|PUBLIC|EXPO_PUBLIC)_[A-Z_]*(SERVICE_ROLE|SERVICE_KEY|SECRET)'
+        applies_to: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx', '**/*.env*']
+        note: >-
+          Secret derriere un prefixe d'exposition : la valeur part dans le paquet
+          client.
+      - kind: grep
+        pattern: '(?i)service_role'
+        applies_to: ['**/components/**', '**/app/**/*.tsx', '**/pages/**/*.tsx', '**/src/client/**', '**/frontend/**']
+        note: Reference a la cle de service dans du code rendu cote client.
+    autofix: never
+    vulnerable_example:
+      lang: typescript
+      code: |
+        // .env.local
+        // NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY=eyJ...
+        const supabase = createClient(url, process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!)
+      explanation: >-
+        La cle se retrouve dans le paquet JavaScript ; toute la base est lisible
+        et modifiable par n'importe quel visiteur.
+    fixed_example:
+      lang: typescript
+      code: |
+        // Cote navigateur : cle publique, bornee par RLS.
+        const supabase = createClient(url, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+
+        // Cote serveur uniquement, sans prefixe d'exposition, pour l'administratif.
+        const admin = createClient(url, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+      explanation: >-
+        Le navigateur ne detient qu'une cle dont les politiques RLS bornent la
+        portee.
+    evidence:
+      - source_id: supabase
+        doc_path: supabase/apps/docs/content/guides/database/postgres/row-level-security.mdx
+        doc_sha256: 92fac76180dbef5f26fd034eccf44cb38c63a868c1cb7ea97d0f6ee73b8e4982
+        anchor: Bypassing Row Level Security
+        url: https://supabase.com/docs/guides/database/postgres/row-level-security
+        quote: |-
+          Supabase provides special "Service" keys, which can be used to bypass RLS. These should never be used in the browser or exposed to customers, but they are useful for administrative tasks.
+      - source_id: supabase
+        doc_path: supabase/apps/docs/content/guides/database/postgres/row-level-security.mdx
+        doc_sha256: 92fac76180dbef5f26fd034eccf44cb38c63a868c1cb7ea97d0f6ee73b8e4982
+        anchor: Bypassing Row Level Security
+        url: https://supabase.com/docs/guides/database/postgres/row-level-security
+        quote: |-
+          This can be useful for system-level access. You should _never_ share login credentials for any Postgres Role with this privilege.
+    tags: [supabase, secrets, rls, contournement, frontend]
+    cwe: ['CWE-798', 'CWE-522']
+    owasp: ['A01:2021', 'A05:2021']
+    extracted_at: '2026-08-01'
+    extractor: claude-opus-5
+
+  - id: database/rls/view-bypasses-underlying-policies
+    title: Declarer security_invoker sur les vues d'un schema expose
+    category: database
+    subcategory: rls
+    severity: high
+    confidence: high
+    description: >-
+      Une vue creee dans un schema expose contourne par defaut les politiques RLS
+      des tables sous-jacentes : elle doit etre declaree avec security_invoker,
+      ou son acces revoque pour les roles publics.
+    rationale: >-
+      Postgres cree les vues en security definer : elles s'executent avec les
+      droits de leur createur, en general un role administrateur. La vue devient
+      donc une porte laterale qui expose sans filtrage les lignes que la table
+      protege. Le piege est particulierement discret : la table a bien sa
+      politique, l'audit de la table est vert, et la fuite passe a cote.
+    remediation: >-
+      Creer les vues avec security_invoker a vrai sur Postgres 15 et au-dela, pour
+      qu'elles obeissent aux politiques de l'appelant. Sur les versions
+      anterieures, revoquer l'acces aux roles anon et authenticated ou deplacer la
+      vue dans un schema non expose.
+    context:
+      languages: [sql]
+      platforms: [supabase, postgresql]
+      project_types: [saas, api, ai-rag]
+    detection:
+      - kind: grep
+        pattern: '(?i)create\s+(or\s+replace\s+)?view\s+(?!.*security_invoker)'
+        applies_to: ['**/migrations/**/*.sql', '**/supabase/**/*.sql', '**/*.sql']
+        note: >-
+          Vue sans security_invoker : elle ignore les politiques des tables
+          sources.
+    autofix: review
+    vulnerable_example:
+      lang: sql
+      code: |
+        create view public.dossiers_resume as
+          select id, cabinet_id, titre from public.dossiers;
+        -- La table est protegee par RLS ; la vue, elle, ne l'est pas.
+      explanation: >-
+        La vue rend visibles les lignes que la politique de la table refuse.
+    fixed_example:
+      lang: sql
+      code: |
+        create view public.dossiers_resume
+        with (security_invoker = true)
+        as select id, cabinet_id, titre from public.dossiers;
+      explanation: >-
+        La vue s'execute avec les droits de l'appelant : les politiques de la table
+        s'appliquent de nouveau.
+    evidence:
+      - source_id: supabase
+        doc_path: supabase/apps/docs/content/guides/database/postgres/row-level-security.mdx
+        doc_sha256: 92fac76180dbef5f26fd034eccf44cb38c63a868c1cb7ea97d0f6ee73b8e4982
+        anchor: Views
+        url: https://supabase.com/docs/guides/database/postgres/row-level-security
+        quote: |-
+          Views bypass RLS by default because they are usually created with the `postgres` user. This is a feature of Postgres, which automatically creates views with `security definer`.
+      - source_id: supabase
+        doc_path: supabase/apps/docs/content/guides/database/postgres/row-level-security.mdx
+        doc_sha256: 92fac76180dbef5f26fd034eccf44cb38c63a868c1cb7ea97d0f6ee73b8e4982
+        anchor: Views
+        url: https://supabase.com/docs/guides/database/postgres/row-level-security
+        quote: |-
+          In older versions of Postgres, protect your views by revoking access from the `anon` and `authenticated` roles, or by putting them in an unexposed schema.
+    tags: [supabase, rls, vues, postgres, contournement]
+    cwe: ['CWE-284']
+    owasp: ['A01:2021']
+    extracted_at: '2026-08-01'
+    extractor: claude-opus-5
+
+  - id: database/rls/security-definer-function-in-exposed-schema
+    title: Garder les fonctions security definer hors des schemas exposes
+    category: database
+    subcategory: rls
+    severity: high
+    confidence: high
+    description: >-
+      Une fonction declaree security definer ne doit jamais etre creee dans un
+      schema expose par l'API : elle appartient a un schema prive, appele
+      uniquement depuis les politiques.
+    rationale: >-
+      Une fonction security definer s'execute avec les droits de son createur ;
+      creee par un role administrateur, elle contourne RLS. Utile a l'interieur
+      d'une politique pour eviter le cout d'un balayage recursif, elle devient un
+      point d'entree ouvert des lors qu'elle est joignable par l'API : l'appelant
+      execute alors du code privilegie qu'il choisit d'invoquer.
+    remediation: >-
+      Placer ces fonctions dans un schema prive non expose, fixer explicitement
+      leur search_path, et n'accorder l'execution qu'aux roles qui en ont besoin.
+    context:
+      languages: [sql]
+      platforms: [supabase, postgresql]
+      project_types: [saas, api, ai-rag]
+    detection:
+      - kind: grep
+        pattern: '(?i)create\s+(or\s+replace\s+)?function\s+public\.'
+        applies_to: ['**/migrations/**/*.sql', '**/supabase/**/*.sql', '**/*.sql']
+        note: >-
+          Fonction dans le schema expose. Verifier qu'elle n'est pas security
+          definer.
+      - kind: grep
+        pattern: '(?i)security\s+definer(?![\s\S]{0,80}set\s+search_path)'
+        applies_to: ['**/migrations/**/*.sql', '**/supabase/**/*.sql', '**/*.sql']
+        note: >-
+          Fonction privilegiee sans search_path fixe : cible de detournement par
+          resolution de nom.
+    autofix: never
+    vulnerable_example:
+      lang: sql
+      code: |
+        create function public.tous_les_dossiers()
+        returns setof dossiers
+        language sql
+        security definer            -- contourne RLS, et joignable par l'API
+        as $$ select * from dossiers $$;
+      explanation: >-
+        N'importe quel client appelle cette fonction et recoit toutes les lignes.
+    fixed_example:
+      lang: sql
+      code: |
+        create function private.a_le_role(role_attendu text)
+        returns boolean
+        language plpgsql
+        security definer set search_path = ''    -- schema prive, chemin fixe
+        as $$
+        begin
+          return exists (
+            select 1 from public.roles_table
+            where user_id = (select auth.uid()) and role = role_attendu
+          );
+        end;
+        $$;
+      explanation: >-
+        La fonction n'est plus joignable par l'API et ne sert que depuis les
+        politiques.
+    evidence:
+      - source_id: supabase
+        doc_path: supabase/apps/docs/content/guides/database/postgres/row-level-security.mdx
+        doc_sha256: 92fac76180dbef5f26fd034eccf44cb38c63a868c1cb7ea97d0f6ee73b8e4982
+        anchor: Use security definer functions
+        url: https://supabase.com/docs/guides/database/postgres/row-level-security
+        quote: |-
+          A "security definer" function runs using the same role that _created_ the function. This means that if you create a role with a superuser (like `postgres`), then that function will have `bypassrls` privileges.
+      - source_id: supabase
+        doc_path: supabase/apps/docs/content/guides/database/postgres/row-level-security.mdx
+        doc_sha256: 92fac76180dbef5f26fd034eccf44cb38c63a868c1cb7ea97d0f6ee73b8e4982
+        anchor: Use security definer functions
+        url: https://supabase.com/docs/guides/database/postgres/row-level-security
+        quote: |-
+          Security-definer functions should never be created in a schema in the "Exposed schemas" inside your API settings
+    tags: [supabase, rls, postgres, privileges, search-path]
+    cwe: ['CWE-269', 'CWE-426']
+    owasp: ['A01:2021']
+    extracted_at: '2026-08-01'
+    extractor: claude-opus-5
+
+  - id: database/rls/auth-schema-exposed-instead-of-profile-table
+    title: Ne pas exposer le schema auth — passer par une table de profil protegee
+    category: database
+    subcategory: rls
+    severity: medium
+    confidence: high
+    description: >-
+      Les donnees utilisateur accessibles par l'API vivent dans une table de profil
+      du schema public, protegee par RLS et referencant auth.users par sa cle
+      primaire avec suppression en cascade — jamais dans le schema auth lui-meme.
+    rationale: >-
+      Le schema auth contient les elements d'authentification : jetons de
+      recuperation, etats de confirmation, metadonnees d'identite. Il est
+      volontairement tenu hors de l'API generee. Le contourner pour eviter d'ecrire
+      une table de profil revient a exposer ce materiel. La reference par cle
+      primaire compte aussi : les autres colonnes gerees par la plateforme peuvent
+      changer sans preavis, ce qui casse silencieusement l'integrite.
+    remediation: >-
+      Creer une table de profil dans le schema public, activer RLS, accorder les
+      privileges role par role, et referencer auth.users(id) avec on delete
+      cascade. Alimenter la table par un declencheur a la creation de compte.
+    context:
+      languages: [sql]
+      platforms: [supabase]
+      project_types: [saas, api, ai-rag]
+    detection:
+      - kind: grep
+        pattern: '(?i)\bfrom\s+auth\.users\b|\.from\s*\(\s*["'']auth\.users["'']\s*\)'
+        applies_to: ['**/*.sql', '**/*.ts', '**/*.tsx', '**/*.py']
+        note: >-
+          Lecture directe du schema auth. Verifier qu'elle a lieu cote serveur, pas
+          via l'API publique.
+    autofix: never
+    evidence:
+      - source_id: supabase
+        doc_path: supabase/apps/docs/content/guides/auth/managing-user-data.mdx
+        doc_sha256: 585eba1769d6607cab5133ec935a1fb3110bc28026c9fbd7559cad63c26446ff
+        anchor: Accessing user data via API
+        url: https://supabase.com/docs/guides/auth/managing-user-data
+        quote: |-
+          For security, the Auth schema is not exposed in the auto-generated API. If you want to access users data via the API, you can create your own user tables in the `public` schema.
+      - source_id: supabase
+        doc_path: supabase/apps/docs/content/guides/auth/managing-user-data.mdx
+        doc_sha256: 585eba1769d6607cab5133ec935a1fb3110bc28026c9fbd7559cad63c26446ff
+        anchor: Accessing user data via API
+        url: https://supabase.com/docs/guides/auth/managing-user-data
+        quote: |-
+          Make sure to protect the table by enabling Row Level Security and only granting the necessary privileges for each role.
+    tags: [supabase, auth, modelisation, rls]
+    cwe: ['CWE-200']
+    owasp: ['A01:2021']
+    extracted_at: '2026-08-01'
+    extractor: claude-opus-5
+
+  - id: authentication/timing/secret-compared-with-equality-operator
+    title: Comparer secrets et jetons en temps constant
+    category: authentication
+    subcategory: timing
+    severity: medium
+    confidence: high
+    description: >-
+      La comparaison d'un secret fourni par l'appelant — mot de passe, jeton d'API,
+      signature de webhook — se fait avec une primitive a temps constant, jamais
+      avec l'operateur d'egalite du langage.
+    rationale: >-
+      La comparaison de chaines s'arrete au premier caractere different : plus le
+      prefixe fourni est correct, plus la reponse tarde. Cet ecart de quelques
+      microsecondes se mesure a distance sur un grand nombre de requetes, et permet
+      de reconstituer le secret caractere par caractere — l'application aide alors
+      l'attaquant a la deviner. Une primitive a temps constant supprime le signal.
+    remediation: >-
+      Utiliser secrets.compare_digest en Python, timingSafeEqual en Node. Appliquer
+      la meme logique au chemin d'echec de l'authentification : quand l'identifiant
+      n'existe pas, verifier tout de meme un condensat factice pour que la duree de
+      reponse ne revele pas l'existence du compte.
+    context:
+      languages: [python, typescript, javascript]
+      frameworks: [fastapi, express, next]
+      project_types: [saas, api, ai-rag]
+    detection:
+      - kind: grep
+        pattern: '(?i)if\s+[\w.\[\]"'']*\b(password|passwd|token|secret|signature|api_key|apikey)\b[\w.\[\]"'']*\s*(==|!=)'
+        applies_to: ['**/*.py', '**/*.ts', '**/*.js']
+        note: >-
+          Secret compare avec l'operateur d'egalite : duree dependante du contenu.
+      - kind: absent
+        pattern: '(?i)(compare_digest|timingSafeEqual)'
+        applies_to: ['**/*webhook*.py', '**/*webhook*.ts', '**/auth/**/*.py']
+        note: >-
+          Verification de signature ou d'authentification sans comparaison a temps
+          constant.
+    autofix: review
+    vulnerable_example:
+      lang: python
+      code: |
+        if credentials.username == "stanleyjobson" and credentials.password == "swordfish":
+            ...
+      explanation: >-
+        Le temps de reponse croit avec la longueur du prefixe correct : le secret
+        se devine caractere par caractere.
+    fixed_example:
+      lang: python
+      code: |
+        import secrets
+
+        utilisateur_ok = secrets.compare_digest(
+            credentials.username.encode("utf8"), b"stanleyjobson"
+        )
+        mot_de_passe_ok = secrets.compare_digest(
+            credentials.password.encode("utf8"), b"swordfish"
+        )
+        if not (utilisateur_ok and mot_de_passe_ok):
+            raise HTTPException(status_code=401, detail="Identifiants incorrects")
+      explanation: >-
+        La duree de comparaison ne depend plus du contenu : le canal auxiliaire
+        disparait.
+    evidence:
+      - source_id: fastapi
+        doc_path: fastapi/docs/en/docs/advanced/security/http-basic-auth.md
+        doc_sha256: 76feaf284219c786bbf96684d0b09f40ff4ea49a978631e13a6d89502998761e
+        anchor: Timing Attacks
+        url: https://fastapi.tiangolo.com/advanced/security/http-basic-auth/
+        quote: |-
+          But by using the `secrets.compare_digest()` it will be secure against a type of attacks called "timing attacks".
+      - source_id: fastapi
+        doc_path: fastapi/docs/en/docs/advanced/security/http-basic-auth.md
+        doc_sha256: 76feaf284219c786bbf96684d0b09f40ff4ea49a978631e13a6d89502998761e
+        anchor: The time to answer helps the attackers
+        url: https://fastapi.tiangolo.com/advanced/security/http-basic-auth/
+        quote: |-
+          At that point, by noticing that the server took some microseconds longer to send the "Incorrect username or password" response, the attackers will know that they got _something_ right, some of the initial letters were right.
+    tags: [fastapi, timing, authentification, webhook, canal-auxiliaire]
+    cwe: ['CWE-208']
+    owasp: ['A07:2021']
+    extracted_at: '2026-08-01'
+    extractor: claude-opus-5
+
+  - id: authentication/enumeration/login-reveals-account-existence
+    title: Ne pas laisser l'echec d'authentification reveler l'existence du compte
+    category: authentication
+    subcategory: enumeration
+    severity: medium
+    confidence: high
+    description: >-
+      Un echec d'authentification doit produire la meme reponse et la meme duree,
+      que l'identifiant existe ou non : message identique, code identique, et
+      verification d'un condensat factice quand le compte est absent.
+    rationale: >-
+      Un point d'entree qui distingue compte inconnu et mot de passe errone offre
+      un oracle d'existence : on y teste une liste d'adresses et on obtient la
+      liste des clients. Pour un produit destine aux cabinets d'avocats, la seule
+      liste des comptes est deja une information commerciale et deontologique
+      sensible. La difference se lit dans le message, mais aussi dans le temps de
+      reponse quand le chemin du compte inconnu court-circuite la verification.
+    remediation: >-
+      Retourner un message unique pour tous les echecs, et executer la verification
+      de mot de passe contre un condensat factice lorsque le compte n'existe pas.
+      Appliquer la meme discipline aux parcours d'inscription et de reinitialisation.
+    context:
+      languages: [python, typescript]
+      frameworks: [fastapi, next]
+      project_types: [saas, api, ai-rag]
+    detection:
+      - kind: grep
+        pattern: '(?i)(detail|message|error)\s*[:=]\s*["''][^"'']*(utilisateur inconnu|user not found|unknown user|no such user|email not registered|compte introuvable)'
+        applies_to: ['**/*.py', '**/*.ts', '**/*.js']
+        note: Message d'echec revelant l'absence du compte.
+      - kind: grep
+        pattern: '(?i)if\s+not\s+(user|utilisateur|account|compte)\s*:\s*\n\s*(return|raise)'
+        applies_to: ['**/auth/**/*.py', '**/*auth*.py', '**/*login*.py']
+        note: >-
+          Sortie anticipee quand le compte est absent : la duree de reponse
+          differe.
+    autofix: review
+    evidence:
+      - source_id: fastapi
+        doc_path: fastapi/docs/en/docs/tutorial/security/oauth2-jwt.md
+        doc_sha256: 09de4db00267448e11cbdc198154c6bf3ac4aa48cb88ecb87ee4e71d44d9272b
+        anchor: Update the dependencies
+        url: https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt/
+        quote: |-
+          When `authenticate_user` is called with a username that doesn't exist in the database, we still run `verify_password` against a dummy hash.
+      - source_id: fastapi
+        doc_path: fastapi/docs/en/docs/tutorial/security/oauth2-jwt.md
+        doc_sha256: 09de4db00267448e11cbdc198154c6bf3ac4aa48cb88ecb87ee4e71d44d9272b
+        anchor: Update the dependencies
+        url: https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt/
+        quote: |-
+          This ensures the endpoint takes roughly the same amount of time to respond whether the username is valid or not, preventing **timing attacks** that could be used to enumerate existing usernames.
+    tags: [fastapi, enumeration, authentification, vie-privee]
+    cwe: ['CWE-204']
+    owasp: ['A07:2021']
+    extracted_at: '2026-08-01'
+    extractor: claude-opus-5

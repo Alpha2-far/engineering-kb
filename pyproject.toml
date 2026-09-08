@@ -1,0 +1,58 @@
+[project]
+name = "kb"
+version = "0.1.0"
+description = "Ground-truth engineering knowledge base: authoritative security, architecture, and code quality rules anchored in official standards for AI agents and code audits"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12"
+authors = [
+    { name = "Farel Viaho", email = "viahofarel@gmail.com" }
+]
+keywords = [
+    "security",
+    "audit",
+    "owasp",
+    "knowledge-base",
+    "ai-agents",
+    "static-analysis",
+    "code-quality",
+    "fastapi",
+    "supabase",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Topic :: Security",
+    "Topic :: Software Development :: Quality Assurance",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+]
+dependencies = [
+    "pydantic>=2.9",
+    "pyyaml>=6.0",
+    "typer>=0.12",
+    "rich>=13.7",
+    "pypdf>=6.14.2",
+]
+
+[project.urls]
+Homepage = "https://github.com/Alpha2-far/engineering-kb"
+Repository = "https://github.com/Alpha2-far/engineering-kb"
+Issues = "https://github.com/Alpha2-far/engineering-kb/issues"
+
+[project.scripts]
+kb = "kb.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/kb"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]

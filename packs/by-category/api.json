@@ -1,0 +1,110 @@
+{
+  "category": "api",
+  "generated_at": "2026-09-08T09:24:06+00:00",
+  "count": 1,
+  "rules": [
+    {
+      "id": "api/mass-assignment/request-body-bound-to-model",
+      "title": "Ne pas lier directement le corps de requete au modele persiste",
+      "category": "api",
+      "subcategory": "mass-assignment",
+      "severity": "high",
+      "confidence": "high",
+      "description": "Le corps d'une requete ne doit pas etre affecte en bloc a l'objet persiste : la couche d'entree declare explicitement les champs modifiables, et les attributs sensibles n'y figurent pas.",
+      "rationale": "La liaison automatique cree des parametres que le developpeur n'a jamais prevus : il suffit d'ajouter un champ au corps JSON pour ecrire un attribut qui n'apparait dans aucun formulaire. C'est ainsi qu'un utilisateur se donne un role d'administrateur, change le proprietaire d'un objet ou remet a zero un compteur de facturation, sans qu'aucune route dediee n'existe.",
+      "remediation": "Definir un schema d'entree ne contenant que les champs que le client a le droit d'ecrire, refuser les champs inconnus, et recopier explicitement vers le modele. Ne jamais construire l'entite a partir du dictionnaire brut de la requete.",
+      "context": {
+        "languages": [
+          "python",
+          "typescript"
+        ],
+        "frameworks": [
+          "fastapi",
+          "pydantic",
+          "prisma",
+          "express"
+        ],
+        "platforms": [],
+        "project_types": [
+          "saas",
+          "api",
+          "ai-rag"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "(?i)(Model|User|Account|Order|Dossier|\\w+)\\s*\\(\\s*\\*\\*\\s*(request|payload|body|data|dto)\\b",
+          "applies_to": [
+            "**/*.py"
+          ],
+          "note": "Deballage du corps de requete dans le constructeur du modele."
+        },
+        {
+          "kind": "grep",
+          "pattern": "(?i)(setattr\\s*\\(|Object\\.assign\\s*\\(|\\.\\.\\.\\s*(req\\.body|body|payload)\\b)",
+          "applies_to": [
+            "**/*.py",
+            "**/*.ts",
+            "**/*.js"
+          ],
+          "note": "Affectation en bloc depuis le corps de requete."
+        },
+        {
+          "kind": "grep",
+          "pattern": "(?i)model_config\\s*=\\s*ConfigDict\\((?![^)]*extra)",
+          "applies_to": [
+            "**/schemas/**/*.py",
+            "**/*schema*.py"
+          ],
+          "note": "Schema d'entree sans politique explicite sur les champs supplementaires."
+        }
+      ],
+      "autofix": "review",
+      "vulnerable_example": {
+        "lang": "python",
+        "code": "@router.post(\"/users\")\nasync def creer(payload: dict):\n    return await User.create(**payload)     # is_admin passe si le client l'envoie\n",
+        "explanation": "Ajouter \"is_admin\": true au JSON suffit a obtenir le role."
+      },
+      "fixed_example": {
+        "lang": "python",
+        "code": "class UserCreate(BaseModel):\n    model_config = ConfigDict(extra=\"forbid\")   # champ inconnu = 422\n    email: EmailStr\n    nom: str\n    # is_admin n'est pas exposé : il n'est pas ecrivable par le client.\n\n@router.post(\"/users\")\nasync def creer(payload: UserCreate):\n    return await User.create(email=payload.email, nom=payload.nom)\n",
+        "explanation": "La surface ecrivable est declaree, et tout champ hors liste est rejete."
+      },
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Mass_Assignment_Cheat_Sheet.md",
+          "doc_sha256": "d4e5bc6520ab51fc9c5f49a5dec6e316d16f3e8626db5a6220e3dda2ab58f7b3",
+          "quote": "Attackers can sometimes use this methodology to create new parameters that the developer never intended which in turn creates or overwrites new variable or objects in program code that was not intended.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html",
+          "anchor": "Introduction / Definition"
+        },
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Mass_Assignment_Cheat_Sheet.md",
+          "doc_sha256": "d4e5bc6520ab51fc9c5f49a5dec6e316d16f3e8626db5a6220e3dda2ab58f7b3",
+          "quote": "Software frameworks sometimes allow developers to automatically bind HTTP request parameters into program code variables or objects to make using that framework easier on developers. This can sometimes cause harm.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html",
+          "anchor": "Introduction / Definition"
+        }
+      ],
+      "tags": [
+        "mass-assignment",
+        "api",
+        "validation",
+        "escalade-de-privileges"
+      ],
+      "cwe": [
+        "CWE-915"
+      ],
+      "owasp": [
+        "A08:2021",
+        "API3:2023"
+      ],
+      "extracted_at": "2026-08-01",
+      "extractor": "claude-opus-5",
+      "ref": "KB-0016"
+    }
+  ]
+}

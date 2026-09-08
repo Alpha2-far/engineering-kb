@@ -1,0 +1,1255 @@
+source_id: owasp-cheatsheets
+
+# Regles tirees des OWASP Cheat Sheets. Perimetre : les fiches qui portent sur
+# la pile reellement en service (Python/FastAPI, TypeScript/React/Next, Postgres,
+# Docker, GitHub Actions) et sur les defauts qui se lisent dans le code. Les
+# fiches propres a Java, .NET, PHP, Rails, Kubernetes ou l'embarque ne sont pas
+# extraites : elles ne se declencheraient sur aucun projet ici.
+
+rules:
+  - id: database/sql-injection/dynamic-query-string-concatenation
+    title: Parametrer les requetes SQL au lieu de concatener les entrees
+    category: database
+    subcategory: sql-injection
+    severity: critical
+    confidence: high
+    description: >-
+      Toute requete SQL doit etre construite avec des parametres lies : le code SQL
+      est defini d'abord, les valeurs sont passees ensuite. Aucune donnee externe ne
+      doit etre inseree par concatenation, f-string ou formatage de chaine.
+    rationale: >-
+      Une requete construite par concatenation ne distingue plus le code de la
+      donnee : le moteur recoit une seule chaine et l'analyse entierement comme du
+      SQL. Une valeur contenant une apostrophe referme la chaine litterale et le
+      reste de l'entree devient de la syntaxe executable, avec les droits de la
+      connexion applicative. Le parametrage supprime la classe entiere de defauts
+      plutot que de filtrer ses manifestations.
+    remediation: >-
+      Utiliser des instructions preparees ou des requetes parametrees partout.
+      Quand c'est la structure de la requete qui varie (nom de colonne, sens du
+      tri), valider la valeur contre une liste d'autorisation explicite : le
+      parametrage ne couvre que les valeurs, pas les identifiants.
+    context:
+      languages: [python, typescript, sql]
+      frameworks: [sqlalchemy, fastapi, prisma]
+      platforms: [postgresql, supabase]
+      project_types: [saas, api, ai-rag, pipeline, cli]
+    detection:
+      - kind: grep
+        pattern: '(?i)(execute|executemany|raw|query|text)\s*\(\s*f["'']'
+        applies_to: ['**/*.py']
+        note: Requete construite par f-string.
+      - kind: grep
+        pattern: '(?i)(select|insert\s+into|update|delete\s+from)\s[^;''"]{0,200}["'']\s*[%+]\s*\w'
+        applies_to: ['**/*.py', '**/*.ts', '**/*.js']
+        note: Concatenation ou interpolation dans une requete SQL.
+      - kind: grep
+        pattern: '\$queryRawUnsafe|\$executeRawUnsafe'
+        applies_to: ['**/*.ts', '**/*.js']
+        note: Variante Prisma explicitement non securisee.
+    autofix: review
+    vulnerable_example:
+      lang: python
+      code: |
+        nom = request.query_params["client"]
+        rows = session.execute(text(f"select * from dossiers where client = '{nom}'"))
+      explanation: >-
+        L'entree ' or '1'='1 transforme le filtre en condition toujours vraie.
+    fixed_example:
+      lang: python
+      code: |
+        nom = request.query_params["client"]
+        rows = session.execute(
+            text("select * from dossiers where client = :client"),
+            {"client": nom},
+        )
+      explanation: >-
+        Le SQL est fige avant que la valeur n'arrive ; elle ne peut plus en changer
+        le sens.
+    evidence:
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.md
+        doc_sha256: 77924b56a036b072bbc7a2b3bfc4f9f59fa5da92790c6690681574cb9457ec14
+        anchor: Defense Option 1 / Prepared Statements
+        url: https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html
+        quote: |-
+          parameterized queries force the developer to define all SQL code first and pass in each parameter to the query later.
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.md
+        doc_sha256: 77924b56a036b072bbc7a2b3bfc4f9f59fa5da92790c6690681574cb9457ec14
+        anchor: What Is a SQL Injection Attack?
+        url: https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html
+        quote: |-
+          Attackers can use SQL injection on an application if it has dynamic database queries that use string concatenation and user-supplied input.
+    tags: [injection-sql, base-de-donnees, validation]
+    cwe: ['CWE-89']
+    owasp: ['A03:2021']
+    extracted_at: '2026-08-01'
+    extractor: claude-opus-5
+
+  - id: authentication/password-storage/fast-hash-used-for-passwords
+    title: Hacher les mots de passe avec Argon2id, scrypt, bcrypt ou PBKDF2
+    category: authentication
+    subcategory: password-storage
+    severity: critical
+    confidence: high
+    description: >-
+      Un mot de passe doit etre hache avec un algorithme lent et parametrable
+      (Argon2id en premier choix, sinon scrypt, bcrypt ou PBKDF2), avec un sel
+      unique par mot de passe. Ni stockage en clair, ni chiffrement reversible, ni
+      fonction de hachage rapide de la famille SHA ou MD5.
+    rationale: >-
+      SHA-256 est concu pour etre rapide : c'est exactement la propriete que
+      l'attaquant exploite, en essayant des milliards de candidats a la seconde sur
+      un GPU. Un algorithme lent et gourmand en memoire rend chaque essai couteux,
+      et le sel unique interdit d'attaquer toute la base d'un seul calcul. Le
+      chiffrement est exclu parce qu'il est reversible : la cle compromise rend tous
+      les mots de passe en clair.
+    remediation: >-
+      Utiliser Argon2id avec au minimum 19 MiB de memoire, 2 iterations et 1 degre
+      de parallelisme ; bcrypt avec un facteur de travail d'au moins 10 pour un
+      systeme existant. Passer par la bibliotheque du framework, qui gere le sel, et
+      rehacher au moment de la connexion quand les parametres evoluent.
+    context:
+      languages: [python, typescript]
+      project_types: [saas, api]
+    detection:
+      - kind: grep
+        pattern: '(?i)(hashlib\.(md5|sha1|sha256|sha512)|createHash\s*\(\s*["''](md5|sha1|sha256)["''])'
+        applies_to: ['**/*.py', '**/*.ts', '**/*.js']
+        note: >-
+          Hachage rapide. A signaler si la valeur hachee est un mot de passe.
+      - kind: grep
+        pattern: '(?i)(password|mot_de_passe|passwd)\s*=\s*[^=\n]{0,40}(md5|sha1|sha256|sha512|encrypt|cipher)\s*\('
+        applies_to: ['**/*.py', '**/*.ts']
+      - kind: absent
+        pattern: '(?i)(argon2|bcrypt|scrypt|pbkdf2|passlib|CryptContext)'
+        applies_to: ['**/auth/**/*.py', '**/*password*.py', '**/*auth*.py']
+        note: >-
+          Module d'authentification sans aucune fonction de hachage adaptee.
+    autofix: never
+    vulnerable_example:
+      lang: python
+      code: |
+        empreinte = hashlib.sha256(mot_de_passe.encode()).hexdigest()
+        db.save(User(email=email, password_hash=empreinte))
+      explanation: >-
+        Rapide et sans sel : une fuite de base se casse au dictionnaire en quelques
+        heures.
+    fixed_example:
+      lang: python
+      code: |
+        from argon2 import PasswordHasher
+
+        ph = PasswordHasher(memory_cost=19456, time_cost=2, parallelism=1)
+        db.save(User(email=email, password_hash=ph.hash(mot_de_passe)))
+      explanation: >-
+        Sel genere par la bibliotheque, cout memoire impose a chaque essai.
+    evidence:
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/Password_Storage_Cheat_Sheet.md
+        doc_sha256: 59e6ce03452bb2607e690010487389db388af969d43ce6acb535a3e2f128e14e
+        anchor: Introduction
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+        quote: |-
+          Passwords should never be stored in plain text. Instead, they must be protected using strong, slow hashing algorithms such as Argon2id, bcrypt, or PBKDF2. A unique salt must be added to each password to prevent attackers from using precomputed lookup tables like rainbow tables.
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/Password_Storage_Cheat_Sheet.md
+        doc_sha256: 59e6ce03452bb2607e690010487389db388af969d43ce6acb535a3e2f128e14e
+        anchor: Methods for Enhancing Password Storage / Salting
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+        quote: |-
+          A salt is a unique, randomly generated string that is added to each password as part of the hashing process.
+    tags: [mots-de-passe, hachage, argon2, cryptographie]
+    cwe: ['CWE-916', 'CWE-759']
+    owasp: ['A02:2021']
+    extracted_at: '2026-08-01'
+    extractor: claude-opus-5
+
+  - id: authentication/jwt/algorithm-not-pinned-at-verification
+    title: Imposer l'algorithme attendu a la verification d'un JWT
+    category: authentication
+    subcategory: jwt
+    severity: critical
+    confidence: high
+    description: >-
+      La verification d'un JWT doit exiger explicitement l'algorithme attendu, au
+      lieu de se fier a l'en-tete alg du jeton presente.
+    rationale: >-
+      L'en-tete du jeton est fourni par celui qui le presente : lui laisser choisir
+      l'algorithme revient a laisser l'attaquant choisir comment sa signature sera
+      verifiee. La valeur none a fait accepter des jetons non signes par plusieurs
+      bibliotheques, et un basculement de RS256 vers HS256 permet de signer avec la
+      cle publique, qui est publique par construction. Le controle doit venir du
+      code du verificateur, pas du jeton.
+    remediation: >-
+      Passer la liste des algorithmes acceptes a la fonction de verification et
+      refuser tout le reste, y compris none. Verifier egalement les revendications
+      d'emetteur et d'audience, qu'une signature valide ne garantit pas.
+    context:
+      languages: [python, typescript]
+      frameworks: [fastapi, next, express]
+      project_types: [saas, api, ai-rag]
+    detection:
+      - kind: grep
+        pattern: '(?i)jwt\.decode\s*\([^)]*verify_signature\s*:\s*False|jwt\.decode\s*\([^)]*options\s*=\s*\{[^}]*verify[^}]*False'
+        applies_to: ['**/*.py']
+        note: Verification de signature desactivee.
+      - kind: grep
+        pattern: '(?i)(jwt\.decode|jwtVerify|verify)\s*\(\s*\w+\s*,\s*\w+\s*\)'
+        applies_to: ['**/*.py', '**/*.ts', '**/*.js']
+        note: >-
+          Verification sans argument algorithms : l'en-tete du jeton decide.
+      - kind: grep
+        pattern: '(?i)["'']alg["'']\s*:\s*["'']none["'']|algorithms\s*=\s*\[[^\]]*none'
+        applies_to: ['**/*.py', '**/*.ts', '**/*.js']
+    autofix: review
+    vulnerable_example:
+      lang: python
+      code: |
+        payload = jwt.decode(token, SECRET)     # l'algorithme vient du jeton
+      explanation: >-
+        Un jeton forge avec alg none ou HS256 peut passer selon la bibliotheque.
+    fixed_example:
+      lang: python
+      code: |
+        payload = jwt.decode(
+            token,
+            SECRET,
+            algorithms=["HS256"],          # impose par le code
+            audience=SETTINGS.audience,
+            issuer=SETTINGS.issuer,
+        )
+      explanation: >-
+        Tout jeton annoncant un autre algorithme est rejete avant lecture des claims.
+    evidence:
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/JSON_Web_Token_Cheat_Sheet.md
+        doc_sha256: b465e68c80973b8e4e502bbef2642cf026ecdeade84cec50defa5878e08d34df
+        anchor: Issues / None Hashing Algorithm
+        url: https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_Cheat_Sheet.html
+        quote: |-
+          some libraries treated tokens signed with the none algorithm as a valid token with a verified signature
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/JSON_Web_Token_Cheat_Sheet.md
+        doc_sha256: b465e68c80973b8e4e502bbef2642cf026ecdeade84cec50defa5878e08d34df
+        anchor: Issues / None Hashing Algorithm / How to Prevent
+        url: https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_Cheat_Sheet.html
+        quote: |-
+          Last, during token validation, explicitly request that the expected algorithm was used.
+    tags: [jwt, authentification, signature]
+    cwe: ['CWE-347']
+    owasp: ['A02:2021', 'A07:2021']
+    extracted_at: '2026-08-01'
+    extractor: claude-opus-5
+
+  - id: authentication/jwt/hmac-secret-too-short
+    title: Utiliser un secret HMAC long et aleatoire pour signer les JWT
+    category: authentication
+    subcategory: jwt
+    severity: high
+    confidence: high
+    description: >-
+      Le secret utilise pour signer un JWT en HMAC doit compter au moins
+      64 caracteres issus d'une source d'alea sure, etre unique par environnement,
+      et ne jamais figurer dans le code ni avoir de valeur de repli.
+    rationale: >-
+      La securite d'un jeton HMAC ne depend de rien d'autre que de la force du
+      secret. Un attaquant qui detient un jeton valide peut attaquer le secret hors
+      ligne, sans limite de debit et sans laisser de trace ; une phrase courte ou un
+      mot du dictionnaire tombe en quelques minutes. Le secret casse, il peut
+      forger n'importe quelle identite, y compris administrateur.
+    remediation: >-
+      Generer le secret avec un generateur cryptographique, le stocker dans la
+      configuration d'environnement, et faire echouer le demarrage s'il est absent
+      plutot que de retomber sur une valeur par defaut. Envisager une signature
+      asymetrique quand plusieurs services verifient les jetons.
+    context:
+      languages: [python, typescript]
+      project_types: [saas, api, ai-rag]
+    detection:
+      - kind: grep
+        pattern: '(?i)(jwt_secret|secret_key|JWT_SECRET|SECRET_KEY)\s*[:=]\s*["''][^"'']{0,63}["'']'
+        applies_to: ['**/*.py', '**/*.ts', '**/*.js', '**/*.env*']
+        note: Secret litteral de moins de 64 caracteres.
+      - kind: grep
+        pattern: '(?i)(getenv|environ\.get|process\.env\.\w*SECRET\w*)[^)\n]{0,60}(,\s*["''][^"'']+["'']|\|\|\s*["''])'
+        applies_to: ['**/*.py', '**/*.ts', '**/*.js']
+        note: >-
+          Valeur de repli sur un secret : l'environnement mal configure demarre avec
+          un secret connu.
+    autofix: never
+    vulnerable_example:
+      lang: python
+      code: |
+        SECRET = os.getenv("JWT_SECRET", "dev-secret")   # repli en production
+      explanation: >-
+        Une variable oubliee au deploiement fait signer les jetons avec une valeur
+        presente dans le depot.
+    fixed_example:
+      lang: python
+      code: |
+        SECRET = os.environ["JWT_SECRET"]       # KeyError au demarrage si absent
+        if len(SECRET) < 64:
+            raise RuntimeError("JWT_SECRET doit faire au moins 64 caracteres")
+      explanation: >-
+        L'application refuse de demarrer mal configuree, au lieu de demarrer
+        vulnerable.
+    evidence:
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/JSON_Web_Token_Cheat_Sheet.md
+        doc_sha256: b465e68c80973b8e4e502bbef2642cf026ecdeade84cec50defa5878e08d34df
+        anchor: Issues / Weak Token Secret / How to Prevent
+        url: https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_Cheat_Sheet.html
+        quote: |-
+          As this secret would never need to be typed by a human, it should be at least 64 characters, and generated using a
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/JSON_Web_Token_Cheat_Sheet.md
+        doc_sha256: b465e68c80973b8e4e502bbef2642cf026ecdeade84cec50defa5878e08d34df
+        anchor: Issues / Weak Token Secret / Symptom
+        url: https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_Cheat_Sheet.html
+        quote: |-
+          the security of the token is entirely dependent on the strength of the secret used with the HMAC. If an attacker can obtain a valid JWT, they can then carry out an offline attack
+    tags: [jwt, secrets, cryptographie]
+    cwe: ['CWE-326', 'CWE-798']
+    owasp: ['A02:2021']
+    extracted_at: '2026-08-01'
+    extractor: claude-opus-5
+
+  - id: authorization/object-level/missing-ownership-check-on-id
+    title: Verifier la propriete de l'objet a chaque acces par identifiant
+    category: authorization
+    subcategory: object-level
+    severity: critical
+    confidence: high
+    description: >-
+      Toute route qui recoit un identifiant d'objet doit verifier, cote serveur, que
+      l'utilisateur authentifie a le droit d'acceder a cet objet precis, avant de le
+      lire ou de le modifier.
+    rationale: >-
+      Etre authentifie ne dit rien sur ce a quoi on a droit. Sans controle au niveau
+      de l'objet, changer un chiffre dans l'URL suffit a lire le dossier d'un autre
+      client : l'attaque ne demande aucun outil et laisse des traces indistinguables
+      d'un usage normal. Un identifiant difficile a deviner ne remplace pas le
+      controle : une URL partagee ou un journal fuite suffit a l'obtenir.
+    remediation: >-
+      Charger l'objet avec un predicat de propriete dans la requete meme, plutot que
+      de le charger puis de comparer. Sur Postgres, doubler d'une policy Row Level
+      Security pour que l'oubli d'un filtre ne suffise pas a ouvrir l'acces.
+    context:
+      languages: [python, typescript]
+      frameworks: [fastapi, next, express]
+      platforms: [supabase, postgresql]
+      project_types: [saas, api, ai-rag]
+    detection:
+      - kind: grep
+        pattern: '(?i)\{\s*(id|uuid|\w+_id)\s*(:[^}]*)?\}'
+        applies_to: ['**/routers/**/*.py', '**/api/**/*.py', '**/app/api/**/route.ts']
+        note: >-
+          Route parametree par un identifiant. Verifier qu'un filtre de propriete
+          accompagne le chargement.
+      - kind: grep
+        pattern: '(?i)\.(get|filter_by|find_one|findUnique|findFirst)\s*\(\s*(id\s*=|\{\s*id\s*:)'
+        applies_to: ['**/*.py', '**/*.ts']
+        note: >-
+          Chargement par identifiant seul, sans predicat d'appartenance.
+    autofix: never
+    vulnerable_example:
+      lang: python
+      code: |
+        @router.get("/dossiers/{dossier_id}")
+        async def lire(dossier_id: str, user: User = Depends(current_user)):
+            return await Dossier.get(id=dossier_id)      # aucun lien avec user
+      explanation: >-
+        Incrementer dossier_id donne acces aux dossiers des autres cabinets.
+    fixed_example:
+      lang: python
+      code: |
+        @router.get("/dossiers/{dossier_id}")
+        async def lire(dossier_id: str, user: User = Depends(current_user)):
+            dossier = await Dossier.get(id=dossier_id, org_id=user.org_id)
+            if dossier is None:
+                raise HTTPException(404)     # 404, pas 403 : ne pas confirmer l'existence
+            return dossier
+      explanation: >-
+        Le predicat d'appartenance est dans la requete ; la reponse ne revele pas
+        l'existence d'un objet inaccessible.
+    evidence:
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet.md
+        doc_sha256: 0a0056b89acc452b4e4fece79511387406480e912f4fce8247b1381446fc4bda
+        anchor: Introduction
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet.html
+        quote: |-
+          A missing object-level authorization check that allows a user to access or manipulate an object they should not be able to access.
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet.md
+        doc_sha256: 0a0056b89acc452b4e4fece79511387406480e912f4fce8247b1381446fc4bda
+        anchor: Identifier complexity
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet.html
+        quote: |-
+          However, even with complex identifiers, access control checks are essential. If attackers obtain URLs for unauthorized objects, the application should still block their access attempts.
+    tags: [idor, autorisation, multi-tenant, api]
+    cwe: ['CWE-639']
+    owasp: ['A01:2021', 'API1:2023']
+    extracted_at: '2026-08-01'
+    extractor: claude-opus-5
+
+  - id: authorization/multi-tenant/tenant-id-taken-from-request
+    title: Deriver le locataire de la session authentifiee, jamais de la requete
+    category: authorization
+    subcategory: multi-tenant
+    severity: critical
+    confidence: high
+    description: >-
+      L'identifiant de locataire qui sert a filtrer les donnees doit etre lu dans la
+      session ou le jeton verifie, jamais dans un en-tete, un parametre de requete
+      ou un champ du corps fourni par le client.
+    rationale: >-
+      Un identifiant de locataire transmis par le client est une valeur que le
+      client controle : le modifier suffit a basculer tout le filtrage vers un autre
+      cabinet. Le controle d'acces devient alors declaratif, exactement comme si on
+      demandait poliment a l'appelant de ne pas tricher. Le seul identifiant
+      opposable est celui qui a ete etabli a l'authentification et signe.
+    remediation: >-
+      Etablir le contexte de locataire tot dans le cycle de requete, a partir de la
+      session, et l'injecter dans la couche d'acces aux donnees. Si un en-tete de
+      locataire existe pour des raisons de routage, verifier qu'il correspond a
+      celui de la session et refuser sinon.
+    context:
+      languages: [python, typescript]
+      frameworks: [fastapi, next, express]
+      platforms: [supabase, postgresql]
+      project_types: [saas, api, ai-rag]
+    detection:
+      - kind: grep
+        pattern: '(?i)(headers|query_params|args|params|body|cookies)[\.\[]\s*["'']?[xX]?-?(tenant|org|organisation|organization|account|workspace)[_-]?id'
+        applies_to: ['**/*.py', '**/*.ts', '**/*.js']
+        note: >-
+          Identifiant de locataire lu depuis une entree client.
+    autofix: never
+    vulnerable_example:
+      lang: python
+      code: |
+        def get_tenant_data(request):
+            tenant_id = request.headers.get("X-Tenant-ID")   # controle par l'appelant
+            return db.execute("select * from data where tenant_id = :t", {"t": tenant_id})
+      explanation: >-
+        Changer un en-tete donne acces aux donnees de n'importe quel locataire.
+    fixed_example:
+      lang: python
+      code: |
+        def get_tenant_data(request, user: User = Depends(current_user)):
+            # Le locataire vient du jeton verifie, pas de la requete.
+            return db.execute(
+                "select * from data where tenant_id = :t",
+                {"t": user.tenant_id},
+            )
+      explanation: >-
+        L'appelant ne peut plus choisir son perimetre : il est fixe a
+        l'authentification.
+    evidence:
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/Multi_Tenant_Security_Cheat_Sheet.md
+        doc_sha256: 8faca80517276ada9574c0f92b714e949d5ae5ea0f180ce2f92dd86c69df548b
+        anchor: Tenant Identification & Context Management
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Multi_Tenant_Security_Cheat_Sheet.html
+        quote: |-
+          Establish tenant context early in the request lifecycle (middleware/interceptor).
+          - Use cryptographically secure, non-guessable tenant identifiers.
+          - Never trust client-supplied tenant IDs without validation.
+          - Bind tenant context to the authenticated user session.
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/Multi_Tenant_Security_Cheat_Sheet.md
+        doc_sha256: 8faca80517276ada9574c0f92b714e949d5ae5ea0f180ce2f92dd86c69df548b
+        anchor: Bad example / Trusting client-supplied tenant ID
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Multi_Tenant_Security_Cheat_Sheet.html
+        quote: |-
+          # Dangerous: Tenant ID from request header without validation/query parameterization
+    tags: [multi-tenant, autorisation, isolation, saas]
+    cwe: ['CWE-639', 'CWE-284']
+    owasp: ['A01:2021']
+    extracted_at: '2026-08-01'
+    extractor: claude-opus-5
+
+  - id: api/mass-assignment/request-body-bound-to-model
+    title: Ne pas lier directement le corps de requete au modele persiste
+    category: api
+    subcategory: mass-assignment
+    severity: high
+    confidence: high
+    description: >-
+      Le corps d'une requete ne doit pas etre affecte en bloc a l'objet persiste :
+      la couche d'entree declare explicitement les champs modifiables, et les
+      attributs sensibles n'y figurent pas.
+    rationale: >-
+      La liaison automatique cree des parametres que le developpeur n'a jamais
+      prevus : il suffit d'ajouter un champ au corps JSON pour ecrire un attribut
+      qui n'apparait dans aucun formulaire. C'est ainsi qu'un utilisateur se donne
+      un role d'administrateur, change le proprietaire d'un objet ou remet a zero un
+      compteur de facturation, sans qu'aucune route dediee n'existe.
+    remediation: >-
+      Definir un schema d'entree ne contenant que les champs que le client a le
+      droit d'ecrire, refuser les champs inconnus, et recopier explicitement vers le
+      modele. Ne jamais construire l'entite a partir du dictionnaire brut de la
+      requete.
+    context:
+      languages: [python, typescript]
+      frameworks: [fastapi, pydantic, prisma, express]
+      project_types: [saas, api, ai-rag]
+    detection:
+      - kind: grep
+        pattern: '(?i)(Model|User|Account|Order|Dossier|\w+)\s*\(\s*\*\*\s*(request|payload|body|data|dto)\b'
+        applies_to: ['**/*.py']
+        note: Deballage du corps de requete dans le constructeur du modele.
+      - kind: grep
+        pattern: '(?i)(setattr\s*\(|Object\.assign\s*\(|\.\.\.\s*(req\.body|body|payload)\b)'
+        applies_to: ['**/*.py', '**/*.ts', '**/*.js']
+        note: Affectation en bloc depuis le corps de requete.
+      - kind: grep
+        pattern: '(?i)model_config\s*=\s*ConfigDict\((?![^)]*extra)'
+        applies_to: ['**/schemas/**/*.py', '**/*schema*.py']
+        note: >-
+          Schema d'entree sans politique explicite sur les champs supplementaires.
+    autofix: review
+    vulnerable_example:
+      lang: python
+      code: |
+        @router.post("/users")
+        async def creer(payload: dict):
+            return await User.create(**payload)     # is_admin passe si le client l'envoie
+      explanation: >-
+        Ajouter "is_admin": true au JSON suffit a obtenir le role.
+    fixed_example:
+      lang: python
+      code: |
+        class UserCreate(BaseModel):
+            model_config = ConfigDict(extra="forbid")   # champ inconnu = 422
+            email: EmailStr
+            nom: str
+            # is_admin n'est pas exposé : il n'est pas ecrivable par le client.
+
+        @router.post("/users")
+        async def creer(payload: UserCreate):
+            return await User.create(email=payload.email, nom=payload.nom)
+      explanation: >-
+        La surface ecrivable est declaree, et tout champ hors liste est rejete.
+    evidence:
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/Mass_Assignment_Cheat_Sheet.md
+        doc_sha256: d4e5bc6520ab51fc9c5f49a5dec6e316d16f3e8626db5a6220e3dda2ab58f7b3
+        anchor: Introduction / Definition
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html
+        quote: |-
+          Attackers can sometimes use this methodology to create new parameters that the developer never intended which in turn creates or overwrites new variable or objects in program code that was not intended.
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/Mass_Assignment_Cheat_Sheet.md
+        doc_sha256: d4e5bc6520ab51fc9c5f49a5dec6e316d16f3e8626db5a6220e3dda2ab58f7b3
+        anchor: Introduction / Definition
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html
+        quote: |-
+          Software frameworks sometimes allow developers to automatically bind HTTP request parameters into program code variables or objects to make using that framework easier on developers. This can sometimes cause harm.
+    tags: [mass-assignment, api, validation, escalade-de-privileges]
+    cwe: ['CWE-915']
+    owasp: ['A08:2021', 'API3:2023']
+    extracted_at: '2026-08-01'
+    extractor: claude-opus-5
+
+  - id: frontend/xss/unsanitized-html-sink
+    title: Ne pas ecrire de variable dans un puits HTML sans assainissement
+    category: frontend
+    subcategory: xss
+    severity: high
+    confidence: high
+    description: >-
+      Les points d'ecriture directe dans le DOM (innerHTML, dangerouslySetInnerHTML,
+      v-html) ne doivent pas recevoir de valeur dynamique sans assainissement
+      prealable par une bibliotheque dediee.
+    rationale: >-
+      Ces puits interpretent la chaine recue comme du balisage : une valeur
+      contenant une balise ou un attribut de gestionnaire d'evenement s'execute dans
+      la session de l'utilisateur, avec ses cookies et ses droits. Le rendu par
+      defaut du framework echappe deja les valeurs ; ces API sont precisement les
+      sorties de secours qui desactivent cette protection.
+    remediation: >-
+      Preferer textContent ou le rendu normal du framework, qui traitent la valeur
+      comme du texte. Quand du HTML doit reellement etre rendu, le passer par un
+      assainisseur avec liste d'autorisation avant l'affectation.
+    context:
+      languages: [typescript, javascript]
+      frameworks: [react, next, vue, svelte]
+      project_types: [saas, static-site, ai-rag]
+    detection:
+      - kind: grep
+        pattern: 'dangerouslySetInnerHTML|\.innerHTML\s*=|\.outerHTML\s*=|v-html|\{@html'
+        applies_to: ['**/*.tsx', '**/*.jsx', '**/*.ts', '**/*.js', '**/*.vue', '**/*.svelte']
+        note: >-
+          Puits HTML. Verifier qu'un assainisseur intervient sur la valeur ecrite.
+      - kind: grep
+        pattern: '(?i)document\.write\s*\(|\.insertAdjacentHTML\s*\('
+        applies_to: ['**/*.ts', '**/*.js', '**/*.tsx']
+    autofix: review
+    vulnerable_example:
+      lang: typescript
+      code: |
+        elem.innerHTML = commentaire;    // commentaire vient de l'utilisateur
+      explanation: >-
+        Un commentaire contenant une balise img avec onerror execute du script.
+    fixed_example:
+      lang: typescript
+      code: |
+        // Si le texte suffit :
+        elem.textContent = commentaire;
+
+        // Si du HTML est vraiment necessaire :
+        elem.innerHTML = DOMPurify.sanitize(commentaire);
+      explanation: >-
+        textContent n'interprete rien ; DOMPurify ne laisse passer qu'une liste de
+        balises et d'attributs sans effet actif.
+    evidence:
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.md
+        doc_sha256: d297fa71c9d35ac4a9cd951a65b84d85ef029166e34948851cd3a3f16f7db89c
+        anchor: Framework Security
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
+        quote: |-
+          developers need to know that problems can occur if frameworks are used insecurely, such as:
+
+          - _escape hatches_ that frameworks use to directly manipulate the DOM
+          - React’s `dangerouslySetInnerHTML` without sanitising the HTML
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.md
+        doc_sha256: d297fa71c9d35ac4a9cd951a65b84d85ef029166e34948851cd3a3f16f7db89c
+        anchor: Safe Sinks
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
+        quote: |-
+          Try to refactor your code to remove references to unsafe sinks like innerHTML, and instead use textContent or value.
+    tags: [xss, frontend, dom, react]
+    cwe: ['CWE-79']
+    owasp: ['A03:2021']
+    extracted_at: '2026-08-01'
+    extractor: claude-opus-5
+
+  - id: app-security/file-upload/extension-and-type-not-validated
+    title: Valider extension et type reel d'un fichier televerse, et le renommer
+    category: app-security
+    subcategory: file-upload
+    severity: high
+    confidence: high
+    description: >-
+      Un fichier televerse doit etre accepte sur liste d'extensions autorisees,
+      voir son type reel controle sans se fier a l'en-tete Content-Type, etre
+      renomme par l'application, et etre stocke hors de la racine web.
+    rationale: >-
+      L'extension et le Content-Type sont fournis par le client : les deux se
+      falsifient trivialement. Un fichier accepte sur sa seule extension declaree,
+      conserve sous le nom choisi par l'appelant et depose dans un repertoire servi
+      par le serveur web, permet de deposer puis d'invoquer du code. La double
+      extension et l'octet nul contournent en outre les filtres naifs.
+    remediation: >-
+      Autoriser explicitement les seules extensions utiles au metier, verifier la
+      signature reelle du contenu, generer un nom aleatoire cote application, et
+      servir les fichiers par un gestionnaire qui fait correspondre un identifiant
+      au fichier plutot que d'exposer le chemin.
+    context:
+      languages: [python, typescript]
+      frameworks: [fastapi, next, express]
+      project_types: [saas, api, ai-rag]
+    detection:
+      - kind: grep
+        pattern: '(?i)\.(filename|originalname|content_type|mimetype)\b'
+        applies_to: ['**/*.py', '**/*.ts', '**/*.js']
+        note: >-
+          Metadonnee de televersement fournie par le client. Verifier qu'elle ne
+          sert pas de controle de securite ni de nom de fichier final.
+      - kind: absent
+        pattern: '(?i)(ALLOWED_EXTENSIONS|allowed_types|allowlist|uuid4|token_hex|randomUUID|magic|filetype|imghdr)'
+        applies_to: ['**/upload*/**', '**/*upload*.py', '**/*upload*.ts']
+        note: >-
+          Chemin de televersement sans liste d'autorisation ni nom genere.
+    autofix: never
+    vulnerable_example:
+      lang: python
+      code: |
+        chemin = Path("static/uploads") / fichier.filename    # nom choisi par le client
+        chemin.write_bytes(await fichier.read())
+      explanation: >-
+        facture.pdf.php depose dans un repertoire servi devient executable ; ../ dans
+        le nom sort du repertoire.
+    fixed_example:
+      lang: python
+      code: |
+        EXT_AUTORISEES = {".pdf", ".docx"}
+
+        ext = Path(fichier.filename).suffix.lower()
+        if ext not in EXT_AUTORISEES:
+            raise HTTPException(415, "type de fichier non autorise")
+
+        contenu = await fichier.read()
+        if filetype.guess(contenu).mime not in {"application/pdf", DOCX_MIME}:
+            raise HTTPException(415, "le contenu ne correspond pas a l'extension")
+
+        # Nom genere, stockage hors racine web, service par identifiant.
+        chemin = STOCKAGE_PRIVE / f"{uuid4().hex}{ext}"
+        chemin.write_bytes(contenu)
+      explanation: >-
+        Extension sur liste, type reel verifie, nom maitrise, fichier non servi
+        directement.
+    evidence:
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/File_Upload_Cheat_Sheet.md
+        doc_sha256: 0f527b1636adb44e305c97657b5cf84c0b5b60895ee5091f4b26baee0e271b6d
+        anchor: Overview
+        url: https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html
+        quote: |-
+          Validate the file type, don't trust the [Content-Type header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type) as it can be spoofed
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/File_Upload_Cheat_Sheet.md
+        doc_sha256: 0f527b1636adb44e305c97657b5cf84c0b5b60895ee5091f4b26baee0e271b6d
+        anchor: Extension Validation
+        url: https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html
+        quote: |-
+          Double extensions, _e.g._ `.jpg.php`, where it circumvents easily the regex `\.jpg`
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/File_Upload_Cheat_Sheet.md
+        doc_sha256: 0f527b1636adb44e305c97657b5cf84c0b5b60895ee5091f4b26baee0e271b6d
+        anchor: Filename Sanitization
+        url: https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html
+        quote: |-
+          creating a **random string** as a filename, such as generating a UUID/GUID, is essential.
+    tags: [televersement, validation, rce, stockage]
+    cwe: ['CWE-434']
+    owasp: ['A04:2021']
+    extracted_at: '2026-08-01'
+    extractor: claude-opus-5
+
+  - id: network/ssrf/outbound-url-not-allowlisted
+    title: Restreindre les requetes sortantes a une liste d'hotes autorisee
+    category: network
+    subcategory: ssrf
+    severity: high
+    confidence: high
+    description: >-
+      Quand l'application effectue une requete vers une URL derivee d'une entree
+      externe, l'hote doit etre valide contre une liste d'autorisation ; une liste
+      d'interdiction ne suffit pas.
+    rationale: >-
+      Le serveur applicatif atteint des ressources que le client ne peut pas
+      atteindre : reseau interne, service de metadonnees de l'hebergeur, bases sans
+      exposition publique. Une URL controlee par un tiers transforme donc
+      l'application en relais vers ce perimetre. Les listes d'interdiction se
+      contournent par les redirections, les notations d'adresse alternatives et les
+      noms qui resolvent vers une adresse privee.
+    remediation: >-
+      Construire la liste des hotes legitimes, comparer strictement apres resolution,
+      refuser les redirections vers un hote hors liste, et bloquer les plages
+      d'adresses privees et de bouclage. Si le domaine fonctionnel n'admet pas de
+      liste fermee, isoler l'appel dans un composant sans acces au reseau interne.
+    context:
+      languages: [python, typescript]
+      project_types: [saas, api, ai-rag, pipeline]
+    detection:
+      - kind: grep
+        pattern: '(?i)(requests|httpx|aiohttp)\.(get|post|put|request)\s*\(\s*(url|target|link|endpoint|\w*_url)\b'
+        applies_to: ['**/*.py']
+        note: Requete sortante vers une URL variable.
+      - kind: grep
+        pattern: '(?i)\bfetch\s*\(\s*(url|target|link|endpoint|\w*Url)\b'
+        applies_to: ['**/*.ts', '**/*.js', '**/*.tsx']
+    autofix: never
+    vulnerable_example:
+      lang: python
+      code: |
+        @router.post("/importer")
+        async def importer(url: str):
+            return (await httpx.AsyncClient().get(url)).text
+      explanation: >-
+        L'appelant fait lire au serveur le service de metadonnees de l'hebergeur et
+        recupere des identifiants d'instance.
+    fixed_example:
+      lang: python
+      code: |
+        HOTES_AUTORISES = {"api.partenaire.com", "cdn.partenaire.com"}
+
+        @router.post("/importer")
+        async def importer(url: str):
+            hote = urlparse(url).hostname
+            if hote not in HOTES_AUTORISES:          # liste d'autorisation, pas d'interdiction
+                raise HTTPException(400, "hote non autorise")
+            async with httpx.AsyncClient(follow_redirects=False) as c:
+                return (await c.get(url)).text
+      explanation: >-
+        Seuls des hotes connus sont joignables, et une redirection ne peut pas
+        deplacer la cible.
+    evidence:
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.md
+        doc_sha256: 1af95247faed3376bbc090ab6257a41097d26f94eb360f46b8e1ce43371376c8
+        anchor: Case 1 / Application can send request only to identified and trusted applications
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+        quote: |-
+          Build an allowlist with all the domain names of every identified and trusted applications.
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.md
+        doc_sha256: 1af95247faed3376bbc090ab6257a41097d26f94eb360f46b8e1ce43371376c8
+        anchor: Deny-list guidance
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html
+        quote: |-
+          **Deny-lists are bypass-prone. Prefer allow-lists.**
+    tags: [ssrf, reseau, validation, cloud]
+    cwe: ['CWE-918']
+    owasp: ['A10:2021']
+    extracted_at: '2026-08-01'
+    extractor: claude-opus-5
+
+  - id: app-security/error-handling/stack-trace-returned-to-client
+    title: Renvoyer une reponse d'erreur generique et journaliser le detail cote serveur
+    category: app-security
+    subcategory: error-handling
+    severity: medium
+    confidence: high
+    description: >-
+      Une erreur inattendue doit produire une reponse generique pour l'appelant,
+      tandis que la trace complete est journalisee cote serveur. Aucun message
+      d'exception, chemin de fichier, requete SQL ni version de composant ne doit
+      figurer dans la reponse.
+    rationale: >-
+      Une trace d'exception renseigne l'attaquant sur la pile, l'arborescence, le
+      schema de base et les points ou l'entree n'est pas geree : elle transforme une
+      erreur en cartographie gratuite du systeme. La meme information est utile a
+      l'equipe, mais dans les journaux, ou son acces est controle.
+    remediation: >-
+      Installer un gestionnaire d'erreurs global qui retourne un corps neutre avec un
+      identifiant de correlation, et journaliser l'exception complete avec ce meme
+      identifiant. Verifier que le mode debug est desactive en production.
+    context:
+      languages: [python, typescript]
+      frameworks: [fastapi, next, express]
+      project_types: [saas, api, ai-rag, static-site]
+    detection:
+      - kind: grep
+        pattern: '(?i)(debug\s*=\s*True|DEBUG\s*[:=]\s*(true|1)\b)'
+        applies_to: ['**/*.py', '**/*.ts', '**/*.env*', '**/settings*.py', '**/config*.py']
+        note: "Mode debug actif : les traces partent au client."
+      - kind: grep
+        pattern: '(?i)(JSONResponse|jsonify|res\.(json|send)|HTTPException)\s*\([^)]{0,120}(str\s*\(\s*e\s*\)|traceback\.|\.stack\b|repr\s*\(\s*e)'
+        applies_to: ['**/*.py', '**/*.ts', '**/*.js']
+        note: Detail d'exception renvoye dans la reponse.
+    autofix: review
+    evidence:
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/Error_Handling_Cheat_Sheet.md
+        doc_sha256: 97a57eb94a0355cf7e74646c1026ad60296e75eb076fe9fc365db4884d5f3691
+        anchor: Objective
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html
+        quote: |-
+          when an unexpected error occurs then a generic response is returned by the application but the error details are logged server side for investigation, and not returned to the user.
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/Error_Handling_Cheat_Sheet.md
+        doc_sha256: 97a57eb94a0355cf7e74646c1026ad60296e75eb076fe9fc365db4884d5f3691
+        anchor: HTTP return codes
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html
+        quote: |-
+          Using error messages that do not provide implementation details is important to avoid information leakage.
+    tags: [fuite-d-information, erreurs, journalisation]
+    cwe: ['CWE-209']
+    owasp: ['A05:2021']
+    extracted_at: '2026-08-01'
+    extractor: claude-opus-5
+
+  - id: app-security/logging/secrets-written-to-logs
+    title: Exclure secrets et donnees sensibles des journaux
+    category: app-security
+    subcategory: logging
+    severity: high
+    confidence: high
+    description: >-
+      Les journaux ne doivent contenir ni mot de passe, ni jeton d'acces, ni
+      identifiant de session, ni chaine de connexion, ni cle de chiffrement, ni
+      donnee personnelle sensible : ces valeurs sont retirees, masquees ou hachees
+      avant ecriture.
+    rationale: >-
+      Un journal circule bien plus largement que la base : il est agrege, expedie
+      vers un service tiers, conserve longtemps et lu par des personnes qui n'ont
+      pas acces a la production. Un secret qui y apparait est donc diffuse au-dela
+      de tout controle, et sa rotation devient obligatoire des qu'on s'en apercoit.
+      Pour un cabinet, la meme logique vaut pour la donnee client.
+    remediation: >-
+      Poser un filtre de redaction dans la configuration de journalisation plutot
+      que de compter sur la vigilance a chaque appel, ne jamais journaliser un objet
+      de requete entier, et verifier les traces d'exception qui embarquent souvent
+      les parametres.
+    context:
+      languages: [python, typescript]
+      project_types: [saas, api, ai-rag, pipeline, cli]
+    detection:
+      - kind: grep
+        pattern: '(?i)(logger|log|console)\.(debug|info|warn|warning|error)\s*\([^)]{0,120}\b(password|passwd|secret|token|api_key|apikey|authorization|credential|connection_string)\b'
+        applies_to: ['**/*.py', '**/*.ts', '**/*.js']
+      - kind: grep
+        pattern: '(?i)(logger|log|console)\.(debug|info|warn|warning|error)\s*\(\s*[^)]{0,40}\b(request|req|payload|body|headers|event)\s*\)'
+        applies_to: ['**/*.py', '**/*.ts', '**/*.js']
+        note: >-
+          Objet de requete journalise en entier : en-tete Authorization inclus.
+    autofix: review
+    vulnerable_example:
+      lang: python
+      code: |
+        logger.info("connexion", extra={"email": email, "password": mot_de_passe})
+      explanation: >-
+        Le mot de passe part vers l'agregateur de journaux et y reste.
+    fixed_example:
+      lang: python
+      code: |
+        logger.info("connexion", extra={"email": email})   # jamais le secret
+
+        # Et un filtre pose une fois pour toutes, plutot que la vigilance a chaque appel :
+        class RedactionFilter(logging.Filter):
+            CHAMPS = {"password", "token", "authorization", "api_key"}
+
+            def filter(self, record):
+                for champ in self.CHAMPS & set(vars(record)):
+                    setattr(record, champ, "[redige]")
+                return True
+      explanation: >-
+        La redaction ne depend plus de la relecture de chaque appel a logger.
+    evidence:
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/Logging_Cheat_Sheet.md
+        doc_sha256: 342a2e9161f004a4aebe217da8476344e1b117f579f6252969e3b9054253eca7
+        anchor: Data to exclude
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+        quote: |-
+          The following should usually not be recorded directly in the logs, but instead should be removed, masked, sanitized, hashed, or encrypted:
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/Logging_Cheat_Sheet.md
+        doc_sha256: 342a2e9161f004a4aebe217da8476344e1b117f579f6252969e3b9054253eca7
+        anchor: Data to exclude
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+        quote: |-
+          - Authentication passwords
+          - Database connection strings
+          - Encryption keys and other primary secrets
+    tags: [journalisation, secrets, pii, observabilite]
+    cwe: ['CWE-532']
+    owasp: ['A09:2021']
+    extracted_at: '2026-08-01'
+    extractor: claude-opus-5
+
+  - id: devops/github-actions/context-interpolated-into-run-block
+    title: Passer le contexte GitHub par variable d'environnement, jamais dans run
+    category: devops
+    subcategory: github-actions
+    severity: critical
+    confidence: high
+    description: >-
+      Une expression de contexte GitHub ne doit pas etre interpolee directement dans
+      un bloc run : la valeur transite par une variable d'environnement
+      intermediaire, qui est ensuite referencee dans le script.
+    rationale: >-
+      L'interpolation a lieu avant l'execution du shell : la valeur est collee dans
+      le script, si bien qu'un titre de pull request contenant une substitution de
+      commande devient du code execute par le coureur. Ce coureur detient le jeton du
+      depot et les secrets du workflow : l'injection donne donc acces a la chaine de
+      livraison, pas seulement au job. Le passage par l'environnement supprime
+      l'etape d'interpolation.
+    remediation: >-
+      Declarer la valeur dans env au niveau de l'etape, puis la referencer par la
+      syntaxe du shell dans run. Appliquer la regle a tous les contextes, y compris
+      ceux qui paraissent surs, pour ne pas avoir a juger au cas par cas.
+    context:
+      platforms: [github-actions]
+      project_types: [saas, api, ai-rag, static-site, pipeline, cli]
+    detection:
+      - kind: grep
+        pattern: '\$\{\{\s*(github|inputs|env)\.[^}]*(title|body|message|name|label|ref|head_ref|email|description)[^}]*\}\}'
+        applies_to: ['.github/workflows/*.yml', '.github/workflows/*.yaml']
+        note: >-
+          Contexte potentiellement controle par un tiers dans un workflow. Verifier
+          qu'il n'apparait pas dans un bloc run.
+      - kind: grep
+        pattern: 'pull_request_target'
+        applies_to: ['.github/workflows/*.yml', '.github/workflows/*.yaml']
+        note: >-
+          Declencheur s'executant avec les secrets du depot cible.
+    autofix: review
+    vulnerable_example:
+      lang: yaml
+      code: |
+        - name: Verifier le titre
+          run: |
+            echo "Titre : ${{ github.event.pull_request.title }}"
+      explanation: >-
+        Un titre contenant une substitution de commande s'execute sur le coureur.
+    fixed_example:
+      lang: yaml
+      code: |
+        - name: Verifier le titre
+          env:
+            PR_TITLE: ${{ github.event.pull_request.title }}
+          run: |
+            echo "Titre : $PR_TITLE"     # valeur, jamais interpolee dans le script
+      explanation: >-
+        Le shell recoit une variable ; son contenu n'est plus analyse comme du code.
+    evidence:
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.md
+        doc_sha256: 241c43a49aa6853f0a1688efb885f3ced52290771309a3ee403d612f47a81fda
+        anchor: Sanitize user input
+        url: https://cheatsheetseries.owasp.org/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.html
+        quote: |-
+          An attacker may submit a malicious payload via context (e.g., via PR title) that could cause remote execution.
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.md
+        doc_sha256: 241c43a49aa6853f0a1688efb885f3ced52290771309a3ee403d612f47a81fda
+        anchor: Sanitize user input
+        url: https://cheatsheetseries.owasp.org/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.html
+        quote: |-
+          always use [intermediate environment variables](https://docs.github.com/en/actions/reference/security/secure-use#good-practices-for-mitigating-script-injection-attacks) to pass any context into `run:` and similar code execution blocks.
+    tags: [ci-cd, github-actions, injection, chaine-de-livraison]
+    cwe: ['CWE-94']
+    owasp: ['A08:2021']
+    extracted_at: '2026-08-01'
+    extractor: claude-opus-5
+
+  - id: devops/github-actions/action-not-pinned-to-commit-sha
+    title: Epingler chaque action tierce a un SHA de commit complet
+    category: devops
+    subcategory: github-actions
+    severity: high
+    confidence: high
+    description: >-
+      Les actions et workflows reutilisables tiers doivent etre references par un SHA
+      de commit complet, jamais par une etiquette de version ni par un nom de
+      branche.
+    rationale: >-
+      Une etiquette est une reference mutable : celui qui controle le depot de
+      l'action peut la deplacer vers un autre commit sans que rien ne change chez
+      l'appelant. Le code execute dans le coureur, avec le jeton du depot et les
+      secrets du workflow, devient donc silencieusement different. C'est le vecteur
+      des compromissions de chaine de livraison observees sur des actions
+      populaires.
+    remediation: >-
+      Remplacer chaque reference par le SHA complet, en gardant la version en
+      commentaire pour la lisibilite, et confier la mise a jour a un outil
+      automatise configure avec un delai avant adoption.
+    context:
+      platforms: [github-actions]
+      project_types: [saas, api, ai-rag, static-site, pipeline, cli]
+    detection:
+      - kind: grep
+        pattern: '^\s*-?\s*uses:\s*[\w.-]+/[\w.-]+@(?![0-9a-f]{40})'
+        applies_to: ['.github/workflows/*.yml', '.github/workflows/*.yaml', '.github/actions/**/*.yml']
+        note: >-
+          Reference d'action qui n'est pas un SHA de 40 caracteres.
+    autofix: review
+    vulnerable_example:
+      lang: yaml
+      code: |
+        steps:
+          - uses: actions/checkout@v4        # etiquette mutable
+          - uses: tiers/deploy-action@main   # branche : pire encore
+      explanation: >-
+        Le proprietaire de l'action peut changer le code execute sans modifier cette
+        ligne.
+    fixed_example:
+      lang: yaml
+      code: |
+        steps:
+          - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+            with:
+              persist-credentials: false
+      explanation: >-
+        Le commit execute est fige ; la mise a jour devient un changement visible en
+        revue.
+    evidence:
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.md
+        doc_sha256: 241c43a49aa6853f0a1688efb885f3ced52290771309a3ee403d612f47a81fda
+        anchor: Always pin all action and reusable workflow versions with a commit hash
+        url: https://cheatsheetseries.owasp.org/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.html
+        quote: |-
+          Check that the used commit belongs to the specified organization/repository. This will prevent dependency confusion attacks, as currently GitHub resolves the commit SHA,
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.md
+        doc_sha256: 241c43a49aa6853f0a1688efb885f3ced52290771309a3ee403d612f47a81fda
+        anchor: Untrusted code checkout
+        url: https://cheatsheetseries.owasp.org/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.html
+        quote: |-
+          In general, never check out code using mutable references (e.g., pull request numbers or branch names) - always use immutable references such as a full commit SHA.
+    tags: [ci-cd, github-actions, chaine-de-livraison, dependances]
+    cwe: ['CWE-1357']
+    owasp: ['A08:2021']
+    extracted_at: '2026-08-01'
+    extractor: claude-opus-5
+
+  - id: devops/github-actions/workflow-permissions-not-restricted
+    title: Partir de permissions vides et n'accorder que le necessaire par job
+    category: devops
+    subcategory: github-actions
+    severity: medium
+    confidence: high
+    description: >-
+      Un workflow doit declarer des permissions vides a son niveau, puis accorder
+      explicitement au niveau de chaque job les seules permissions dont il a besoin.
+    rationale: >-
+      Sans declaration, le jeton du workflow herite des permissions par defaut du
+      depot, souvent en ecriture sur tout le contenu. Une seule etape compromise, ou
+      une action tierce malveillante, peut alors pousser du code, modifier des
+      versions publiees ou ouvrir des acces. Partir de zero rend le privilege
+      visible dans le fichier.
+    remediation: >-
+      Ecrire permissions vide au niveau du workflow, puis ajouter par job le strict
+      necessaire. Utiliser des environnements avec approbation requise pour les
+      deploiements en production.
+    context:
+      platforms: [github-actions]
+      project_types: [saas, api, ai-rag, static-site, pipeline, cli]
+    detection:
+      - kind: absent
+        pattern: '^permissions:'
+        applies_to: ['.github/workflows/*.yml', '.github/workflows/*.yaml']
+        note: >-
+          Aucune declaration de permissions au niveau du workflow : les valeurs par
+          defaut du depot s'appliquent.
+      - kind: grep
+        pattern: '^\s*permissions:\s*write-all'
+        applies_to: ['.github/workflows/*.yml', '.github/workflows/*.yaml']
+    autofix: review
+    evidence:
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.md
+        doc_sha256: 241c43a49aa6853f0a1688efb885f3ced52290771309a3ee403d612f47a81fda
+        anchor: Minimize GITHUB_TOKEN permissions
+        url: https://cheatsheetseries.owasp.org/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.html
+        quote: |-
+          Always set `permissions: {}` at the workflow level to disable all permissions by default. Then, grant only the specific permissions needed at the job level.
+    tags: [ci-cd, github-actions, moindre-privilege]
+    cwe: ['CWE-250']
+    owasp: ['A01:2021']
+    extracted_at: '2026-08-01'
+    extractor: claude-opus-5
+
+  - id: devops/secrets/secret-hardcoded-in-source
+    title: Ne jamais ecrire un secret dans le code ou un fichier de configuration suivi
+    category: devops
+    subcategory: secrets
+    severity: critical
+    confidence: high
+    description: >-
+      Cles d'API, identifiants de base, jetons et cles privees ne doivent figurer ni
+      dans le code source, ni dans un fichier de configuration versionne, ni dans une
+      instruction ENV ou ARG d'image Docker.
+    rationale: >-
+      Un secret commite est diffuse a toute personne ayant acces au depot, present
+      dans chaque copie locale, et conserve dans l'historique meme apres suppression
+      du fichier. Le retirer ne suffit donc jamais : il faut le faire tourner. Dans
+      une image, ENV et ARG fuient avec la definition du conteneur, que l'on peut
+      lire sans l'executer.
+    remediation: >-
+      Charger les secrets depuis un gestionnaire dedie ou la configuration
+      d'environnement de la plateforme, faire echouer le demarrage en cas d'absence,
+      et poser une analyse de secrets en pre-commit et sur les pull requests. Tout
+      secret ayant ete expose est considere comme compromis et remplace.
+    context:
+      languages: [python, typescript]
+      project_types: [saas, api, ai-rag, static-site, pipeline, cli]
+    detection:
+      - kind: grep
+        pattern: '(?i)(api[_-]?key|secret[_-]?key|access[_-]?token|private[_-]?key|client[_-]?secret|service[_-]?role[_-]?key|password)\s*[:=]\s*["''][A-Za-z0-9_\-/+.]{20,}["'']'
+        applies_to: ['**/*.py', '**/*.ts', '**/*.js', '**/*.tsx', '**/*.json', '**/*.yaml', '**/*.yml', '**/*.toml']
+      - kind: grep
+        pattern: '(?i)(sk-[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{30,}|eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----)'
+        applies_to: ['**/*']
+        note: Empreintes de jetons connus et cles privees.
+      - kind: grep
+        pattern: '(?i)^\s*(ENV|ARG)\s+\w*(SECRET|TOKEN|KEY|PASSWORD)\w*\s*='
+        applies_to: ['**/Dockerfile', '**/Dockerfile.*', '**/*.dockerfile']
+        note: Secret fige dans la definition de l'image.
+    autofix: never
+    vulnerable_example:
+      lang: python
+      code: |
+        SUPABASE_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIn0.x"
+      explanation: >-
+        La cle qui contourne RLS est desormais dans l'historique git, pour toujours.
+    fixed_example:
+      lang: python
+      code: |
+        SUPABASE_SERVICE_KEY = os.environ["SUPABASE_SERVICE_KEY"]   # absent = echec au demarrage
+      explanation: >-
+        Le secret vit dans la configuration de la plateforme ; le depot ne contient
+        que son nom.
+    evidence:
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/Secrets_Management_Cheat_Sheet.md
+        doc_sha256: 098b2e35ca5b9846bb35cb80fa9eef59aa97d76e10a12a5ff25b121f2c5770bd
+        anchor: 1 Introduction
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
+        quote: |-
+          Many organizations have them hardcoded within the source code in plaintext, littered throughout configuration files and configuration management tools.
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/Secrets_Management_Cheat_Sheet.md
+        doc_sha256: 098b2e35ca5b9846bb35cb80fa9eef59aa97d76e10a12a5ff25b121f2c5770bd
+        anchor: Containers & Orchestrators
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
+        quote: |-
+          secrets themselves should never be hardcoded using docker ENV or docker ARG commands, as these can easily leak with the container definitions
+    tags: [secrets, fuite, git, docker]
+    cwe: ['CWE-798']
+    owasp: ['A05:2021', 'A07:2021']
+    extracted_at: '2026-08-01'
+    extractor: claude-opus-5
+
+  - id: devops/containers/container-runs-as-root
+    title: Declarer un utilisateur non privilegie dans l'image Docker
+    category: devops
+    subcategory: containers
+    severity: medium
+    confidence: high
+    description: >-
+      Une image Docker doit comporter une directive USER designant un compte non
+      privilegie, et le conteneur doit etre lance avec l'interdiction d'acquerir de
+      nouveaux privileges.
+    rationale: >-
+      Sans directive USER, le processus s'execute en root dans le conteneur. Une
+      execution de code arbitraire dans l'application obtient alors les pleins
+      pouvoirs sur le systeme de fichiers du conteneur et une bien meilleure position
+      pour tenter une evasion. La bascule vers un compte dedie coute une ligne et
+      supprime cette marche.
+    remediation: >-
+      Creer un utilisateur dans l'image, effectuer les installations avant la
+      bascule, puis declarer USER avant la commande de demarrage. Lancer le
+      conteneur avec l'option interdisant l'elevation par binaire setuid.
+    context:
+      platforms: [docker, railway]
+      project_types: [saas, api, ai-rag, pipeline, cli]
+    detection:
+      - kind: absent
+        pattern: '^\s*USER\s+\w'
+        applies_to: ['**/Dockerfile', '**/Dockerfile.*', '**/*.dockerfile']
+        note: "Aucune directive USER : le processus tourne en root."
+      - kind: grep
+        pattern: '^\s*USER\s+(root|0)\s*$'
+        applies_to: ['**/Dockerfile', '**/Dockerfile.*', '**/*.dockerfile']
+    autofix: review
+    evidence:
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/Docker_Security_Cheat_Sheet.md
+        doc_sha256: 3442288cd44dda71aed39e82d6abb7d1d6ffb12350ad1a667d8299c2b5488a43
+        anchor: RULE #2 - Set a user
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+        quote: |-
+          Configuring the container to use an unprivileged user is the best way to prevent privilege escalation attacks.
+      - source_id: owasp-cheatsheets
+        doc_path: owasp-cheatsheets/cheatsheets/Docker_Security_Cheat_Sheet.md
+        doc_sha256: 3442288cd44dda71aed39e82d6abb7d1d6ffb12350ad1a667d8299c2b5488a43
+        anchor: Rule / Limit capabilities
+        url: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+        quote: |-
+          Always run your docker images with `--security-opt=no-new-privileges` in order to prevent privilege escalation.
+    tags: [docker, conteneurs, moindre-privilege]
+    cwe: ['CWE-250']
+    owasp: ['A05:2021']
+    extracted_at: '2026-08-01'
+    extractor: claude-opus-5

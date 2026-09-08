@@ -1,0 +1,1191 @@
+# Registre des sources de la Knowledge Base d'ingenierie
+#
+# Une seule question par entree : « comment obtenir le texte canonique, et a quel cout ? »
+#
+# method:
+#   git       -> sparse-checkout du depot officiel. Cout 0. Donne le texte SOURCE
+#                (markdown/rst/adoc) et un SHA git = provenance parfaite et diffable.
+#   http      -> telechargement direct d'un document officiel (RFC, PDF NIST).  Cout 0.
+#   feed      -> flux/dump structure officiel (CWE XML, CAPEC XML, NVD JSON).   Cout 0.
+#   firecrawl -> RESERVE aux sources qui n'existent qu'en HTML rendu.  Cout 1 credit/page.
+#                Budget : ~985 credits/mois. A depenser uniquement ici.
+#   manual    -> acces restreint (inscription, licence). Ne pas automatiser.
+#
+# tier:
+#   1 -> declenche des regles sur le code que Farel ecrit deja (stack reelle)
+#   2 -> standards transverses + stack adjacente credible
+#   3 -> ecosystemes qu'il ne livre pas aujourd'hui. Enregistres pour ne rien perdre,
+#        acquis a la demande.
+#
+# redistribute: peut-on citer largement dans les packs livres ?
+#   raw/ n'est de toute facon jamais commite (voir .gitignore) : c'est une archive
+#   locale de verification. Ce drapeau borne la longueur des citations publiables.
+
+meta:
+  version: 1
+  updated: "2026-07-28"
+  credit_budget_note: >
+    Firecrawl sert a DECOUVRIR (search/map), Python a RECUPERER (git/http/feed).
+    Toute entree en method=firecrawl doit justifier pourquoi le texte canonique
+    n'est pas accessible autrement.
+
+sources:
+
+  # ======================================================================= #
+  # SECURITE — le coeur. Densite normative la plus elevee de tout le corpus.
+  # ======================================================================= #
+
+  - id: owasp-cheatsheets
+    name: OWASP Cheat Sheet Series
+    tier: 1
+    method: git
+    repo: OWASP/CheatSheetSeries
+    ref: master
+    paths: [cheatsheets]
+    license: CC-BY-SA-4.0
+    redistribute: true
+    categories: [app-security, authentication, authorization, cryptography, api, frontend, backend]
+    note: >
+      120 fiches, chacune purement normative (« do this / never that »).
+      Meilleur rendement regles/page du corpus entier. A traiter en premier.
+
+  - id: owasp-asvs
+    name: OWASP Application Security Verification Standard
+    tier: 1
+    method: git
+    repo: OWASP/ASVS
+    ref: master
+    paths: ["5.0/en"]
+    license: CC-BY-SA-4.0
+    redistribute: true
+    categories: [app-security, authentication, authorization, cryptography, data-protection]
+    note: >
+      Exigences numerotees et testables par construction — se transposent presque
+      1:1 en regles. C'est le squelette de verification de la KB.
+
+  - id: owasp-top10-web
+    name: OWASP Top 10:2025 (web)
+    tier: 1
+    method: git
+    repo: OWASP/Top10
+    ref: master
+    paths: ["2025"]
+    license: NOASSERTION
+    redistribute: false
+    categories: [app-security]
+    note: Taxonomie de reference pour le champ `owasp` des regles.
+
+  - id: owasp-api-security
+    name: OWASP API Security Top 10
+    tier: 1
+    method: git
+    repo: OWASP/API-Security
+    ref: master
+    paths: ["editions/2023/en"]
+    license: NOASSERTION
+    redistribute: false
+    categories: [api, authorization, app-security]
+
+  - id: owasp-llm-top10
+    name: OWASP Top 10 for LLM Applications
+    tier: 1
+    method: git
+    repo: OWASP/www-project-top-10-for-large-language-model-applications
+    ref: main
+    paths: ["2_0_vulns/LLM*.md"]
+    license: NOASSERTION
+    redistribute: false
+    categories: [ai-ml, app-security, data-protection]
+    note: >
+      L'exposition differenciante de Farel (Document Copilot, Cockpit, tout RAG).
+      Aucun audit web classique ne couvre ce terrain.
+      Chemin restreint aux 11 fichiers normatifs LLM00..LLM10 : un checkout complet
+      du depot ramene 636 fichiers / 20 Mo d'echafaudage de site web (404.html,
+      pre-commit, traductions, archives des versions candidates) pour ~110 Ko de
+      contenu utile. Le bruit dilue l'extraction.
+
+  - id: owasp-wstg
+    name: OWASP Web Security Testing Guide
+    tier: 1
+    method: git
+    repo: OWASP/wstg
+    ref: master
+    paths: [document]
+    license: CC-BY-SA-4.0
+    redistribute: true
+    categories: [app-security, api, authentication, authorization]
+    note: Fournit les conditions de detection (comment on prouve la faille).
+
+  - id: openssf-best-practices
+    name: OpenSSF — Best Practices for Open Source Developers
+    tier: 1
+    method: git
+    repo: ossf/wg-best-practices-os-developers
+    ref: main
+    paths: [docs]
+    license: Apache-2.0
+    redistribute: true
+    categories: [devops, code-quality, app-security]
+    note: Chaine d'approvisionnement — OWASP A03:2025.
+
+  - id: openssf-scorecard
+    name: OpenSSF Scorecard — controles de securite des depots
+    tier: 1
+    method: git
+    repo: ossf/scorecard
+    ref: main
+    paths: [docs]
+    license: Apache-2.0
+    redistribute: true
+    categories: [devops, app-security]
+    note: Controles deja mecanises — excellents patrons de `detection`.
+
+  - id: cwe
+    name: MITRE CWE — catalogue des faiblesses
+    tier: 1
+    method: feed
+    urls: ["https://cwe.mitre.org/data/xml/cwec_latest.xml.zip"]
+    format: xml-zip
+    license: "MITRE terms of use"
+    redistribute: false
+    categories: [app-security]
+    note: >
+      Catalogue, pas guidance : a ingerer via le dump XML officiel, jamais en
+      scrapant page par page. Alimente le champ `cwe` des regles.
+
+  - id: capec
+    name: MITRE CAPEC — patrons d'attaque
+    tier: 2
+    method: feed
+    urls: ["https://capec.mitre.org/data/xml/capec_latest.xml"]
+    format: xml
+    license: "MITRE terms of use"
+    redistribute: false
+    categories: [app-security]
+    note: Fournit les scenarios d'attaque exiges par le format Finding.
+
+  - id: cvss
+    name: CVSS v4.0 — specification
+    tier: 2
+    method: http
+    urls: ["https://www.first.org/cvss/v4.0/specification-document"]
+    license: "FIRST terms"
+    redistribute: false
+    categories: [app-security]
+    note: Normalise le calcul de severite au lieu de la laisser au jugement du modele.
+
+  - id: nvd-cve
+    name: NVD / CVE — API officielle
+    tier: 2
+    method: feed
+    urls: ["https://services.nvd.nist.gov/rest/json/cves/2.0"]
+    format: json-api
+    license: "public domain (NIST)"
+    redistribute: false
+    categories: [app-security, devops]
+    note: >
+      Donnee vivante, pas une regle. A interroger au moment de l'audit des
+      dependances, pas a figer dans un pack.
+
+  - id: nist-crypto
+    name: NIST — publications cryptographiques (SP 800-*)
+    tier: 1
+    method: http
+    urls:
+      - "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-175Br1.pdf"
+      - "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-63B-4.pdf"
+      - "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-131Ar2.pdf"
+    license: "public domain (NIST)"
+    redistribute: true
+    categories: [cryptography, authentication]
+    note: >
+      SP 800-63B = l'autorite sur les mots de passe et l'AAL. Revision 4 retenue
+      (la rev. 3 renverse les vieilles regles : plus de rotation obligatoire, plus
+      de complexite imposee — une KB sur la rev. 3 conseillerait l'inverse de
+      l'etat de l'art). 800-131A : la r3 n'existe pas, la revision courante est r2.
+
+  - id: nist-ssdf
+    name: NIST SSDF — Secure Software Development Framework (SP 800-218)
+    tier: 2
+    method: http
+    urls: ["https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-218.pdf"]
+    license: "public domain (NIST)"
+    redistribute: true
+    categories: [devops, architecture, code-quality]
+
+  - id: cert-secure-coding
+    name: SEI CERT — Secure Coding Standards
+    tier: 2
+    method: firecrawl
+    discover: "wiki.sei.cmu.edu SEI CERT secure coding standard C Java Perl"
+    license: "CMU terms"
+    redistribute: false
+    categories: [code-quality, app-security]
+    note: Wiki Confluence — pas de source texte publique, Firecrawl justifie.
+
+  - id: portswigger-academy
+    name: PortSwigger Web Security Academy
+    tier: 2
+    method: firecrawl
+    discover: "portswigger.net/web-security all topics list"
+    license: "PortSwigger terms — verifier avant toute rediffusion"
+    redistribute: false
+    categories: [app-security, api, authentication, authorization]
+    note: >
+      Meilleure source d'exemples d'exploitation reels. HTML uniquement -> Firecrawl.
+      Verifier les CGU : usage interne d'extraction de regles, pas de miroir public.
+
+  - id: mozilla-security
+    name: Mozilla / MDN — Web Security
+    tier: 1
+    method: git
+    repo: mdn/content
+    ref: main
+    paths: ["files/en-us/web/security", "files/en-us/web/http/headers"]
+    license: CC-BY-SA-2.5
+    redistribute: true
+    categories: [frontend, network, app-security]
+    note: Source canonique des headers de securite et de CSP.
+
+  - id: cis-benchmarks
+    name: CIS Benchmarks
+    tier: 3
+    method: manual
+    license: "CIS — inscription requise, licence restrictive"
+    redistribute: false
+    categories: [devops, cloud, production-readiness]
+    note: >
+      NE PAS automatiser : telechargement sous inscription et licence restrictive.
+      Deliberement laisse en manuel — un miroir automatise nous mettrait en faute.
+
+  - id: cloudflare-docs
+    name: Cloudflare — WAF, bots, DDoS, Zero Trust
+    tier: 1
+    method: git
+    repo: cloudflare/cloudflare-docs
+    ref: production
+    paths:
+      - "src/content/docs/waf"
+      - "src/content/docs/bots"
+      - "src/content/docs/ddos-protection"
+    license: CC-BY-4.0
+    redistribute: true
+    categories: [network, cloud, app-security]
+
+  - id: github-security
+    name: GitHub — securite des depots, Actions, secrets
+    tier: 1
+    method: git
+    repo: github/docs
+    ref: main
+    paths: ["content/code-security", "content/actions/security-for-github-actions"]
+    license: CC-BY-4.0
+    redistribute: true
+    categories: [devops, app-security]
+
+  - id: gitlab-security
+    name: GitLab — securite applicative et CI/CD
+    tier: 3
+    method: git
+    repo: gitlab-org/gitlab
+    ref: master
+    paths: ["doc/user/application_security"]
+    license: CC-BY-SA-4.0
+    redistribute: true
+    categories: [devops, app-security]
+    note: Farel n'utilise pas GitLab CI. Enregistre, non acquis.
+
+  - id: snyk-learn
+    name: Snyk Learn — vulnerabilites par ecosysteme
+    tier: 3
+    method: firecrawl
+    discover: "learn.snyk.io lessons list"
+    license: "Snyk terms"
+    redistribute: false
+    categories: [app-security, devops]
+
+  - id: google-security
+    name: Google — Web Fundamentals / securite Chrome
+    tier: 2
+    method: firecrawl
+    discover: "web.dev security articles CSP HTTPS trusted types"
+    license: "CC-BY / Google terms selon la page"
+    redistribute: false
+    categories: [frontend, app-security]
+
+  - id: microsoft-security
+    name: Microsoft — Security Development Lifecycle, Azure security
+    tier: 3
+    method: git
+    repo: MicrosoftDocs/azure-docs
+    ref: main
+    paths: ["articles/security"]
+    license: CC-BY-4.0
+    redistribute: true
+    categories: [cloud, app-security]
+
+  - id: apple-security
+    name: Apple Platform Security
+    tier: 3
+    method: firecrawl
+    discover: "support.apple.com guide security platform"
+    license: "Apple terms"
+    redistribute: false
+    categories: [mobile, cryptography]
+
+  - id: openjs-security
+    name: OpenJS Foundation — securite Node.js
+    tier: 2
+    method: git
+    repo: nodejs/node
+    ref: main
+    paths: ["doc/api/permissions.md", "SECURITY.md"]
+    license: MIT
+    redistribute: true
+    categories: [backend, app-security]
+
+  # ======================================================================= #
+  # LANGAGES
+  # ======================================================================= #
+
+  - id: python
+    name: Python — bibliotheque standard (securite, typage, concurrence)
+    tier: 1
+    method: git
+    repo: python/cpython
+    ref: main
+    paths: ["Doc/library/secrets.rst", "Doc/library/hashlib.rst", "Doc/library/hmac.rst",
+            "Doc/library/ssl.rst", "Doc/library/subprocess.rst", "Doc/library/pickle.rst",
+            "Doc/library/sqlite3.rst", "Doc/library/asyncio-task.rst"]
+    license: PSF-2.0
+    redistribute: true
+    categories: [backend, cryptography, code-quality]
+    note: >
+      Pages ciblees, pas les 354 fichiers : `pickle` et `subprocess` portent des
+      avertissements de securite explicites qui deviennent des regles dures.
+
+  - id: typescript
+    name: TypeScript — manuel officiel
+    tier: 1
+    method: git
+    repo: microsoft/TypeScript-Website
+    ref: v2
+    paths: ["packages/documentation/copy/en/handbook-v2"]
+    license: Apache-2.0
+    redistribute: true
+    categories: [code-quality, frontend, backend]
+
+  - id: javascript
+    name: JavaScript — MDN (reference langage)
+    tier: 2
+    method: git
+    repo: mdn/content
+    ref: main
+    paths: ["files/en-us/web/javascript/reference/global_objects/eval",
+            "files/en-us/web/api/window/postmessage"]
+    license: CC-BY-SA-2.5
+    redistribute: true
+    categories: [frontend, code-quality]
+
+  - id: go
+    name: Go — documentation et securite
+    tier: 3
+    method: git
+    repo: golang/go
+    ref: master
+    paths: ["doc"]
+    license: BSD-3-Clause
+    redistribute: true
+    categories: [backend, code-quality]
+
+  - id: rust
+    name: Rust — documentation officielle
+    tier: 3
+    method: git
+    repo: rust-lang/rust
+    ref: master
+    paths: ["src/doc/nomicon", "src/doc/book/src"]
+    license: "MIT OR Apache-2.0"
+    redistribute: true
+    categories: [backend, code-quality]
+
+  - id: java
+    name: Java — Secure Coding Guidelines
+    tier: 3
+    method: firecrawl
+    discover: "oracle java secure coding guidelines"
+    license: "Oracle terms"
+    redistribute: false
+    categories: [backend, app-security]
+
+  - id: kotlin
+    name: Kotlin — documentation
+    tier: 3
+    method: git
+    repo: JetBrains/kotlin-web-site
+    ref: master
+    paths: [docs/topics]
+    license: Apache-2.0
+    redistribute: true
+    categories: [mobile, backend]
+
+  - id: swift
+    name: Swift — documentation
+    tier: 3
+    method: git
+    repo: swiftlang/swift-book
+    ref: main
+    paths: [TSPL.docc]
+    license: Apache-2.0
+    redistribute: true
+    categories: [mobile]
+
+  - id: php
+    name: PHP — manuel (securite)
+    tier: 3
+    method: git
+    repo: php/doc-en
+    ref: master
+    paths: [security]
+    license: CC-BY-3.0
+    redistribute: true
+    categories: [backend, app-security]
+
+  - id: csharp
+    name: C# / .NET — securite
+    tier: 3
+    method: git
+    repo: dotnet/docs
+    ref: main
+    paths: ["docs/standard/security"]
+    license: CC-BY-4.0
+    redistribute: true
+    categories: [backend, app-security]
+
+  - id: cpp
+    name: C++ — Core Guidelines
+    tier: 3
+    method: git
+    repo: isocpp/CppCoreGuidelines
+    ref: master
+    paths: ["CppCoreGuidelines.md"]
+    license: CC-BY-4.0
+    redistribute: true
+    categories: [code-quality]
+
+  # ======================================================================= #
+  # FRAMEWORKS
+  # ======================================================================= #
+
+  - id: react
+    name: React — reference officielle
+    tier: 1
+    method: git
+    repo: reactjs/react.dev
+    ref: main
+    paths: ["src/content/reference/react", "src/content/learn"]
+    license: CC-BY-4.0
+    redistribute: true
+    categories: [frontend, performance, code-quality]
+
+  - id: nextjs
+    name: Next.js — documentation (App Router, Server Actions, caching)
+    tier: 1
+    method: git
+    repo: vercel/next.js
+    ref: canary
+    paths: ["docs"]
+    license: MIT
+    redistribute: true
+    categories: [frontend, backend, performance, cloud]
+    note: >
+      Next.js 16 est un pilier de montee en competence de Farel. Les Server Actions
+      sont une surface d'autorisation nouvelle et mal comprise — forte valeur.
+
+  - id: fastapi
+    name: FastAPI — documentation
+    tier: 1
+    method: git
+    repo: fastapi/fastapi
+    ref: master
+    paths: ["docs/en/docs/tutorial/security", "docs/en/docs/advanced",
+            "docs/en/docs/deployment"]
+    license: MIT
+    redistribute: true
+    categories: [backend, api, authentication]
+    note: Coeur du stack Farel. Priorite maximale hors OWASP.
+
+  - id: django
+    name: Django — securite et deploiement
+    tier: 2
+    method: git
+    repo: django/django
+    ref: main
+    paths: ["docs/topics/security.txt", "docs/howto/deployment", "docs/topics/auth"]
+    license: BSD-3-Clause
+    redistribute: true
+    categories: [backend, app-security]
+
+  - id: express
+    name: Express — production best practices
+    tier: 2
+    method: git
+    repo: expressjs/expressjs.com
+    ref: gh-pages
+    paths: ["en/advanced/best-practice-security.md", "en/advanced/best-practice-performance.md"]
+    license: CC-BY-SA-3.0
+    redistribute: true
+    categories: [backend, api, performance]
+    note: >
+      Chemin a confirmer par `kb doctor` : la branche par defaut du depot n'exposait
+      pas `en/advanced` a la sonde initiale.
+
+  - id: nestjs
+    name: NestJS — securite
+    tier: 3
+    method: git
+    repo: nestjs/docs.nestjs.com
+    ref: master
+    paths: ["content/security", "content/techniques"]
+    license: MIT
+    redistribute: true
+    categories: [backend, api]
+
+  - id: vue
+    name: Vue — securite
+    tier: 3
+    method: git
+    repo: vuejs/docs
+    ref: main
+    paths: ["src/guide/best-practices"]
+    license: MIT
+    redistribute: true
+    categories: [frontend]
+
+  - id: angular
+    name: Angular — securite
+    tier: 3
+    method: git
+    repo: angular/angular
+    ref: main
+    paths: ["adev/src/content/best-practices"]
+    license: MIT
+    redistribute: true
+    categories: [frontend]
+
+  - id: spring-boot
+    name: Spring Boot / Spring Security
+    tier: 3
+    method: git
+    repo: spring-projects/spring-security
+    ref: main
+    paths: ["docs/modules/ROOT/pages"]
+    license: Apache-2.0
+    redistribute: true
+    categories: [backend, authentication, authorization]
+
+  - id: laravel
+    name: Laravel — securite
+    tier: 3
+    method: git
+    repo: laravel/docs
+    ref: master
+    paths: ["authentication.md", "authorization.md", "validation.md", "csrf.md"]
+    license: MIT
+    redistribute: true
+    categories: [backend, authentication]
+
+  - id: aspnet
+    name: ASP.NET Core — securite
+    tier: 3
+    method: git
+    repo: dotnet/AspNetCore.Docs
+    ref: main
+    paths: ["aspnetcore/security"]
+    license: CC-BY-4.0
+    redistribute: true
+    categories: [backend, authentication]
+
+  # ======================================================================= #
+  # BASES DE DONNEES
+  # ======================================================================= #
+
+  - id: postgresql
+    name: PostgreSQL — documentation officielle
+    tier: 1
+    method: git
+    repo: postgres/postgres
+    ref: master
+    paths: ["doc/src/sgml/ddl.sgml", "doc/src/sgml/user-manag.sgml",
+            "doc/src/sgml/client-auth.sgml", "doc/src/sgml/indices.sgml",
+            "doc/src/sgml/performance-tips.sgml", "doc/src/sgml/backup.sgml"]
+    license: PostgreSQL
+    redistribute: true
+    categories: [database, performance, authorization]
+    note: >
+      SGML, pas markdown — necessite un nettoyage a l'ingestion. Pages ciblees :
+      les 3000 pages de reference ont un rendement en regles quasi nul, alors que
+      `ddl` (dont RLS) et `client-auth` sont denses.
+
+  - id: supabase
+    name: Supabase — guides (RLS, auth, storage, pgvector)
+    tier: 1
+    method: git
+    repo: supabase/supabase
+    ref: master
+    paths: ["apps/docs/content/guides/database", "apps/docs/content/guides/auth",
+            "apps/docs/content/guides/storage", "apps/docs/content/guides/ai"]
+    license: Apache-2.0
+    redistribute: true
+    categories: [database, authorization, authentication, ai-ml]
+    note: >
+      Le piege n(deg)1 de la stack Farel (table sans RLS + cle anon = base publique)
+      se documente ici. Priorite maximale.
+
+  - id: prisma
+    name: Prisma — documentation officielle (ORM, Schema, Client, Migrations, Security)
+    tier: 1
+    method: git
+    repo: prisma/docs
+    ref: main
+    paths: ["apps/docs/content/docs"]
+    license: Apache-2.0
+    redistribute: true
+    categories: [database, backend, app-security, code-quality]
+    note: >
+      Documentation Prisma ORM & Client. Source officielle pour les migrations,
+      la securite des requetes, les relations et le typage.
+
+
+  - id: mysql
+    name: MySQL — securite
+    tier: 3
+    method: firecrawl
+    discover: "dev.mysql.com refman security guidelines"
+    license: "Oracle terms"
+    redistribute: false
+    categories: [database]
+
+  - id: mariadb
+    name: MariaDB — securite
+    tier: 3
+    method: firecrawl
+    discover: "mariadb.com kb security"
+    license: "CC-BY-SA-3.0 / MariaDB terms"
+    redistribute: false
+    categories: [database]
+
+  - id: mongodb
+    name: MongoDB — securite et modelisation
+    tier: 3
+    method: git
+    repo: mongodb/docs
+    ref: master
+    paths: ["source/security", "source/data-modeling"]
+    license: CC-BY-NC-SA-3.0
+    redistribute: false
+    categories: [database]
+
+  - id: redis
+    name: Redis — securite et bonnes pratiques
+    tier: 2
+    method: git
+    repo: redis/docs
+    ref: main
+    paths: ["content/operate/oss_and_stack/management/security"]
+    license: CC-BY-SA-4.0
+    redistribute: true
+    categories: [database, performance]
+
+  - id: sqlite
+    name: SQLite — securite et quirks
+    tier: 2
+    method: http
+    urls: ["https://www.sqlite.org/security.html", "https://www.sqlite.org/quirks.html"]
+    license: "public domain"
+    redistribute: true
+    categories: [database]
+
+  # ======================================================================= #
+  # DEVOPS
+  # ======================================================================= #
+
+  - id: docker
+    name: Docker — securite du moteur et bonnes pratiques Dockerfile
+    tier: 1
+    method: git
+    repo: docker/docs
+    ref: main
+    paths: ["content/manuals/engine/security", "content/manuals/build/building/best-practices.md"]
+    license: Apache-2.0
+    redistribute: true
+    categories: [devops, production-readiness]
+
+  - id: kubernetes
+    name: Kubernetes — securite et configuration
+    tier: 2
+    method: git
+    repo: kubernetes/website
+    ref: main
+    paths: ["content/en/docs/concepts/security", "content/en/docs/concepts/configuration"]
+    license: CC-BY-4.0
+    redistribute: true
+    categories: [devops, cloud]
+    note: Farel ne deploie pas sur k8s aujourd'hui (Railway/Vercel). Tier 2.
+
+  - id: github-actions
+    name: GitHub Actions — durcissement
+    tier: 1
+    method: git
+    repo: github/docs
+    ref: main
+    paths:
+      - "content/actions/concepts/security"
+      - "content/actions/reference/security"
+      - "content/actions/how-tos/secure-your-work"
+    license: CC-BY-4.0
+    redistribute: true
+    categories: [devops, app-security]
+    note: >
+      OWASP A03:2025 — la CI est une surface d'attaque de premier plan.
+      L'ancien chemin `content/actions/security-for-github-actions/security-guides`
+      n'existe plus : github/docs a reorganise en concepts/how-tos/reference.
+
+  - id: gitlab-ci
+    name: GitLab CI — securite des pipelines
+    tier: 3
+    method: git
+    repo: gitlab-org/gitlab
+    ref: master
+    paths: ["doc/ci/secrets", "doc/ci/pipelines"]
+    license: CC-BY-SA-4.0
+    redistribute: true
+    categories: [devops]
+
+  - id: terraform
+    name: Terraform — bonnes pratiques et gestion d'etat
+    tier: 3
+    method: git
+    repo: hashicorp/terraform-docs-common
+    ref: main
+    paths: ["website/docs"]
+    license: MPL-2.0
+    redistribute: true
+    categories: [devops, cloud]
+    note: >
+      Le chemin `website/docs` de hashicorp/terraform n'existe plus (sonde negative) :
+      la doc a migre. `kb doctor` doit confirmer ce depot de remplacement.
+
+  - id: opentofu
+    name: OpenTofu — documentation
+    tier: 3
+    method: git
+    repo: opentofu/opentofu
+    ref: main
+    paths: [website/docs]
+    license: MPL-2.0
+    redistribute: true
+    categories: [devops, cloud]
+
+  - id: helm
+    name: Helm — documentation
+    tier: 3
+    method: git
+    repo: helm/helm-www
+    ref: main
+    paths: ["content/en/docs"]
+    license: Apache-2.0
+    redistribute: true
+    categories: [devops]
+
+  - id: nginx
+    name: NGINX — configuration et durcissement
+    tier: 2
+    method: git
+    repo: nginx/nginx.org
+    ref: main
+    paths: ["xml/en/docs"]
+    license: BSD-2-Clause
+    redistribute: true
+    categories: [network, performance, production-readiness]
+
+  - id: traefik
+    name: Traefik — documentation
+    tier: 3
+    method: git
+    repo: traefik/traefik
+    ref: master
+    paths: [docs/content]
+    license: MIT
+    redistribute: true
+    categories: [network, devops]
+
+  # ======================================================================= #
+  # CLOUD
+  # ======================================================================= #
+
+  - id: aws
+    name: AWS — Well-Architected (pilier securite) + IAM
+    tier: 2
+    method: http
+    urls:
+      - "https://docs.aws.amazon.com/pdfs/wellarchitected/latest/security-pillar/wellarchitected-security-pillar.pdf"
+    license: "AWS terms"
+    redistribute: false
+    categories: [cloud, architecture, production-readiness]
+    note: >
+      Le PDF Well-Architected remplace des milliers de pages HTML : meme contenu
+      normatif, un seul telechargement. Ne jamais crawler docs.aws.amazon.com.
+
+  - id: gcp
+    name: Google Cloud — Architecture Framework (securite)
+    tier: 3
+    method: firecrawl
+    discover: "cloud.google.com architecture framework security principles"
+    license: "CC-BY-4.0 / Google terms"
+    redistribute: false
+    categories: [cloud, architecture]
+
+  - id: azure
+    name: Azure — Well-Architected (securite)
+    tier: 3
+    method: git
+    repo: MicrosoftDocs/well-architected
+    ref: main
+    paths: ["well-architected/security"]
+    license: CC-BY-4.0
+    redistribute: true
+    categories: [cloud, architecture]
+
+  - id: cloudflare-learning
+    name: Cloudflare Learning Center
+    tier: 2
+    method: firecrawl
+    discover: "cloudflare.com learning security ddos bots glossary"
+    license: "Cloudflare terms"
+    redistribute: false
+    categories: [network, app-security]
+    note: Pedagogique, pas de source texte publique -> Firecrawl justifie.
+
+  - id: vercel
+    name: Vercel — deploiement, firewall, BotID
+    tier: 1
+    method: git
+    repo: vercel/vercel
+    ref: main
+    paths: [packages/cli/README.md]
+    license: Apache-2.0
+    redistribute: true
+    categories: [cloud, production-readiness]
+    note: >
+      La doc produit Vercel n'est pas open source. Le pack existant
+      (references/securite/checklist-securite-2026.md partie H) couvre deja
+      firewall/BotID — completer par Firecrawl cible plutot que par git.
+
+  - id: railway
+    name: Railway — deploiement et variables d'environnement
+    tier: 1
+    method: firecrawl
+    discover: "docs.railway.com guides variables environments deployment"
+    license: "Railway terms"
+    redistribute: false
+    categories: [cloud, production-readiness]
+    note: Plateforme de prod de Farel (Document Copilot, cockpit). Doc non open source.
+
+  - id: flyio
+    name: Fly.io — documentation
+    tier: 3
+    method: git
+    repo: superfly/docs
+    ref: main
+    paths: [reference]
+    license: Apache-2.0
+    redistribute: true
+    categories: [cloud]
+
+  - id: digitalocean
+    name: DigitalOcean — tutoriels securite serveur
+    tier: 3
+    method: firecrawl
+    discover: "digitalocean community tutorials server hardening security"
+    license: "CC-BY-NC-SA-4.0"
+    redistribute: false
+    categories: [cloud, devops]
+
+  # ======================================================================= #
+  # AUTHENTIFICATION / AUTORISATION — RFC = texte brut, gratuit, canonique
+  # ======================================================================= #
+
+  - id: rfc-oauth
+    name: OAuth 2.0/2.1 — RFC et bonnes pratiques de securite
+    tier: 1
+    method: http
+    urls:
+      - "https://www.rfc-editor.org/rfc/rfc6749.txt"
+      - "https://www.rfc-editor.org/rfc/rfc9700.txt"
+      - "https://www.rfc-editor.org/rfc/rfc7636.txt"
+    license: "IETF Trust"
+    redistribute: true
+    categories: [authentication, authorization, api]
+    note: >
+      RFC 9700 = Best Current Practice OAuth 2.0 Security (2025), l'etat de l'art.
+      RFC 7636 = PKCE, obligatoire en OAuth 2.1.
+
+  - id: rfc-jwt
+    name: JWT / JWS / JWE + bonnes pratiques
+    tier: 1
+    method: http
+    urls:
+      - "https://www.rfc-editor.org/rfc/rfc7519.txt"
+      - "https://www.rfc-editor.org/rfc/rfc8725.txt"
+    license: "IETF Trust"
+    redistribute: true
+    categories: [authentication, cryptography, api]
+    note: >
+      RFC 8725 (JWT Best Current Practices) enumere les pieges reels :
+      `alg: none`, confusion decle, absence de validation d'audience.
+
+  - id: openid-connect
+    name: OpenID Connect Core
+    tier: 2
+    method: firecrawl
+    discover: "openid.net specs openid-connect-core-1_0"
+    license: "OpenID Foundation terms"
+    redistribute: false
+    categories: [authentication]
+
+  - id: webauthn
+    name: WebAuthn / Passkeys — specification W3C
+    tier: 2
+    method: git
+    repo: w3c/webauthn
+    ref: main
+    paths: ["index.bs"]
+    license: "W3C Document License"
+    redistribute: false
+    categories: [authentication]
+
+  - id: rfc-http
+    name: HTTP — semantique, cache, cookies
+    tier: 1
+    method: http
+    urls:
+      - "https://www.rfc-editor.org/rfc/rfc9110.txt"
+      - "https://www.rfc-editor.org/rfc/rfc9111.txt"
+      - "https://www.rfc-editor.org/rfc/rfc6265.txt"
+    license: "IETF Trust"
+    redistribute: true
+    categories: [network, api, app-security]
+
+  - id: rfc-tls
+    name: TLS 1.3 et recommandations de deploiement
+    tier: 1
+    method: http
+    urls:
+      - "https://www.rfc-editor.org/rfc/rfc8446.txt"
+      - "https://www.rfc-editor.org/rfc/rfc9325.txt"
+    license: "IETF Trust"
+    redistribute: true
+    categories: [cryptography, network]
+    note: RFC 9325 = recommandations concretes de configuration TLS.
+
+  - id: saml
+    name: SAML 2.0
+    tier: 3
+    method: http
+    urls: ["https://docs.oasis-open.org/security/saml/v2.0/saml-core-2.0-os.pdf"]
+    license: "OASIS terms"
+    redistribute: false
+    categories: [authentication]
+
+  - id: rbac-abac
+    name: NIST — modeles de controle d'acces (RBAC / ABAC)
+    tier: 2
+    method: http
+    urls: ["https://nvlpubs.nist.gov/nistpubs/specialpublications/nist.sp.800-162.pdf"]
+    license: "public domain (NIST)"
+    redistribute: true
+    categories: [authorization, architecture]
+
+  # ======================================================================= #
+  # CRYPTOGRAPHIE
+  # ======================================================================= #
+
+  - id: openssl
+    name: OpenSSL — documentation
+    tier: 2
+    method: git
+    repo: openssl/openssl
+    ref: master
+    paths: ["doc/man7"]
+    license: Apache-2.0
+    redistribute: true
+    categories: [cryptography]
+
+  - id: libsodium
+    name: libsodium — documentation
+    tier: 2
+    method: git
+    repo: jedisct1/libsodium-doc
+    ref: master
+    paths: []
+    license: ISC
+    redistribute: true
+    categories: [cryptography]
+    note: Doctrine « choix par defaut sains » — excellente source de regles positives.
+
+  # ======================================================================= #
+  # APIs
+  # ======================================================================= #
+
+  - id: openapi
+    name: OpenAPI Specification
+    tier: 2
+    method: git
+    repo: OAI/OpenAPI-Specification
+    ref: main
+    paths: [versions]
+    license: Apache-2.0
+    redistribute: true
+    categories: [api, architecture]
+
+  - id: graphql
+    name: GraphQL — specification et securite
+    tier: 2
+    method: git
+    repo: graphql/graphql-spec
+    ref: main
+    paths: [spec]
+    license: "OWFa 1.0"
+    redistribute: true
+    categories: [api]
+    note: >
+      Surface propre : profondeur de requete, introspection en prod, batching.
+      Couplee a la cheat sheet OWASP GraphQL.
+
+  - id: grpc
+    name: gRPC — documentation et authentification
+    tier: 3
+    method: git
+    repo: grpc/grpc.io
+    ref: main
+    paths: ["content/en/docs/guides"]
+    license: Apache-2.0
+    redistribute: true
+    categories: [api, network]
+
+  - id: websocket
+    name: WebSocket — RFC 6455
+    tier: 2
+    method: http
+    urls: ["https://www.rfc-editor.org/rfc/rfc6455.txt"]
+    license: "IETF Trust"
+    redistribute: true
+    categories: [api, network]
+    note: >
+      Piege classique : pas de same-origin automatique -> verification d'Origin
+      obligatoire cote serveur.
+
+  - id: sse
+    name: Server-Sent Events — specification HTML
+    tier: 2
+    method: git
+    repo: mdn/content
+    ref: main
+    paths: ["files/en-us/web/api/server-sent_events"]
+    license: CC-BY-SA-2.5
+    redistribute: true
+    categories: [api, frontend]
+
+  - id: rest
+    name: REST — contraintes architecturales
+    tier: 2
+    method: http
+    urls: ["https://www.rfc-editor.org/rfc/rfc9205.txt"]
+    license: "IETF Trust"
+    redistribute: true
+    categories: [api, architecture]
+    note: RFC 9205 = Building Protocols with HTTP (BCP 56bis).
+
+  # ======================================================================= #
+  # IA — au-dela d'OWASP LLM
+  # ======================================================================= #
+
+  - id: nist-ai-rmf
+    name: NIST AI Risk Management Framework
+    tier: 1
+    method: http
+    urls: ["https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.100-1.pdf"]
+    license: "public domain (NIST)"
+    redistribute: true
+    categories: [ai-ml, compliance, architecture]
+    note: >
+      Le cadre que citent les acheteurs institutionnels. Directement utile au
+      positionnement « ingenierie de la confiance » de l'entreprise IA.
+
+  - id: eu-ai-act
+    name: Reglement europeen sur l'IA (AI Act)
+    tier: 2
+    method: http
+    urls: ["https://eur-lex.europa.eu/legal-content/FR/TXT/HTML/?uri=OJ:L_202401689"]
+    license: "EUR-Lex reuse"
+    redistribute: true
+    categories: [compliance, ai-ml]
+
+  # ======================================================================= #
+  # PROTECTION DES DONNEES / CONFORMITE
+  # ======================================================================= #
+
+  - id: gdpr
+    name: RGPD — texte officiel (JO L 119/1)
+    tier: 1
+    method: firecrawl
+    urls: ["https://eur-lex.europa.eu/legal-content/FR/TXT/HTML/?uri=CELEX:32016R0679"]
+    license: "EUR-Lex reuse"
+    redistribute: true
+    categories: [compliance, data-protection]
+    note: >
+      Art. 25 et 32 = les seuls articles reellement traduisibles en regles de code.
+      EUR-Lex repond HTTP 200 avec un corps VIDE a toute requete directe (contenu
+      rendu cote client) : verifie sur 4 variantes d'URL, HTML et PDF, FR et EN.
+      Firecrawl est donc le seul acces au texte officiel — 1 credit, 432 Ko.
+      Ecarte volontairement : gdpr-info.eu repond bien mais c'est un miroir non
+      officiel ; citer un miroir pour un texte de loi ne tient pas devant un client
+      qui achete de la conformite.
+
+  - id: nis2
+    name: NIS2 + ANSSI (ReCyF)
+    tier: 2
+    method: firecrawl
+    discover: "cyber.gouv.fr directive NIS2 referentiel ReCyF mesures"
+    license: "Etalab / ANSSI"
+    redistribute: false
+    categories: [compliance]
+
+  - id: benin-code-numerique
+    name: Benin — Loi 2017-20 (Code du numerique), Livre V
+    tier: 2
+    method: http
+    urls: ["https://www.afapdp.org/wp-content/uploads/2018/06/Benin-Loi-2017-20-Portant-code-du-numerique-en-Republique-du-Benin.pdf"]
+    license: "texte legal"
+    redistribute: true
+    categories: [compliance, data-protection]
+    note: Actif specifique a Farel — la ligne OHADA/Benin ne doit pas etre abandonnee.
+
+  # ======================================================================= #
+  # MOBILE
+  # ======================================================================= #
+
+  - id: owasp-masvs
+    name: OWASP MASVS / MASTG (mobile)
+    tier: 3
+    method: git
+    repo: OWASP/masvs
+    ref: master
+    paths: [Document]
+    license: CC-BY-SA-4.0
+    redistribute: true
+    categories: [mobile, app-security]
+    note: >
+      FORGE prevoit le mobile « plus tard » (context/entites.md). Enregistre,
+      acquis quand le premier projet mobile arrive.

@@ -1,0 +1,104 @@
+{
+  "category": "frontend",
+  "generated_at": "2026-09-08T09:24:06+00:00",
+  "count": 1,
+  "rules": [
+    {
+      "id": "frontend/xss/unsanitized-html-sink",
+      "title": "Ne pas ecrire de variable dans un puits HTML sans assainissement",
+      "category": "frontend",
+      "subcategory": "xss",
+      "severity": "high",
+      "confidence": "high",
+      "description": "Les points d'ecriture directe dans le DOM (innerHTML, dangerouslySetInnerHTML, v-html) ne doivent pas recevoir de valeur dynamique sans assainissement prealable par une bibliotheque dediee.",
+      "rationale": "Ces puits interpretent la chaine recue comme du balisage : une valeur contenant une balise ou un attribut de gestionnaire d'evenement s'execute dans la session de l'utilisateur, avec ses cookies et ses droits. Le rendu par defaut du framework echappe deja les valeurs ; ces API sont precisement les sorties de secours qui desactivent cette protection.",
+      "remediation": "Preferer textContent ou le rendu normal du framework, qui traitent la valeur comme du texte. Quand du HTML doit reellement etre rendu, le passer par un assainisseur avec liste d'autorisation avant l'affectation.",
+      "context": {
+        "languages": [
+          "typescript",
+          "javascript"
+        ],
+        "frameworks": [
+          "react",
+          "next",
+          "vue",
+          "svelte"
+        ],
+        "platforms": [],
+        "project_types": [
+          "saas",
+          "static-site",
+          "ai-rag"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "dangerouslySetInnerHTML|\\.innerHTML\\s*=|\\.outerHTML\\s*=|v-html|\\{@html",
+          "applies_to": [
+            "**/*.tsx",
+            "**/*.jsx",
+            "**/*.ts",
+            "**/*.js",
+            "**/*.vue",
+            "**/*.svelte"
+          ],
+          "note": "Puits HTML. Verifier qu'un assainisseur intervient sur la valeur ecrite."
+        },
+        {
+          "kind": "grep",
+          "pattern": "(?i)document\\.write\\s*\\(|\\.insertAdjacentHTML\\s*\\(",
+          "applies_to": [
+            "**/*.ts",
+            "**/*.js",
+            "**/*.tsx"
+          ]
+        }
+      ],
+      "autofix": "review",
+      "vulnerable_example": {
+        "lang": "typescript",
+        "code": "elem.innerHTML = commentaire;    // commentaire vient de l'utilisateur\n",
+        "explanation": "Un commentaire contenant une balise img avec onerror execute du script."
+      },
+      "fixed_example": {
+        "lang": "typescript",
+        "code": "// Si le texte suffit :\nelem.textContent = commentaire;\n\n// Si du HTML est vraiment necessaire :\nelem.innerHTML = DOMPurify.sanitize(commentaire);\n",
+        "explanation": "textContent n'interprete rien ; DOMPurify ne laisse passer qu'une liste de balises et d'attributs sans effet actif."
+      },
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.md",
+          "doc_sha256": "d297fa71c9d35ac4a9cd951a65b84d85ef029166e34948851cd3a3f16f7db89c",
+          "quote": "developers need to know that problems can occur if frameworks are used insecurely, such as:\n\n- _escape hatches_ that frameworks use to directly manipulate the DOM\n- React’s `dangerouslySetInnerHTML` without sanitising the HTML",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html",
+          "anchor": "Framework Security"
+        },
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.md",
+          "doc_sha256": "d297fa71c9d35ac4a9cd951a65b84d85ef029166e34948851cd3a3f16f7db89c",
+          "quote": "Try to refactor your code to remove references to unsafe sinks like innerHTML, and instead use textContent or value.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html",
+          "anchor": "Safe Sinks"
+        }
+      ],
+      "tags": [
+        "xss",
+        "frontend",
+        "dom",
+        "react"
+      ],
+      "cwe": [
+        "CWE-79"
+      ],
+      "owasp": [
+        "A03:2021"
+      ],
+      "extracted_at": "2026-08-01",
+      "extractor": "claude-opus-5",
+      "ref": "KB-0046"
+    }
+  ]
+}

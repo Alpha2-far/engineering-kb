@@ -1,0 +1,89 @@
+{
+  "category": "data-protection",
+  "generated_at": "2026-09-08T09:24:06+00:00",
+  "count": 1,
+  "rules": [
+    {
+      "id": "data-protection/pii/content-sent-to-provider-without-redaction",
+      "title": "Rediger les donnees sensibles avant tout envoi a un fournisseur externe",
+      "category": "data-protection",
+      "subcategory": "pii",
+      "severity": "high",
+      "confidence": "medium",
+      "description": "Avant d'envoyer du contenu client a un fournisseur d'inference tiers, les elements identifiants et confidentiels qui ne sont pas necessaires a la tache doivent etre detectes et remplaces par des jetons reversibles cote application.",
+      "rationale": "Le contenu transmis sort du perimetre de traitement maitrise : il devient soumis aux conditions du fournisseur, a sa retention et a sa juridiction. Pour un cabinet, cela touche le secret professionnel, et l'argument ne se plaide pas apres coup. Le pseudonymat reduit la surface sans degrader la tache dans la plupart des cas, parce que le modele raisonne sur la structure du document plus que sur l'identite des parties.",
+      "remediation": "Inserer une etape de detection et de substitution avant l'appel, conserver la table de correspondance cote application, et retablir les valeurs dans la reponse. Documenter ce qui reste transmis : une redaction partielle annoncee vaut mieux qu'une garantie qui ne tient pas.",
+      "context": {
+        "languages": [
+          "python",
+          "typescript"
+        ],
+        "frameworks": [],
+        "platforms": [],
+        "project_types": [
+          "ai-rag",
+          "saas",
+          "api"
+        ],
+        "applies_when": "Uniquement si le contenu traite comporte des donnees personnelles ou couvertes par un secret professionnel."
+      },
+      "detection": [
+        {
+          "kind": "absent",
+          "pattern": "(?i)(redact|anonymi|pseudonymi|scrub|mask_pii|presidio|deidentif)",
+          "applies_to": [
+            "**/llm/**/*.py",
+            "**/providers/**/*.py",
+            "**/*client*.py",
+            "**/rag/**/*.py"
+          ],
+          "note": "Aucune etape de redaction dans la couche qui parle au fournisseur."
+        }
+      ],
+      "autofix": "never",
+      "vulnerable_example": {
+        "lang": "python",
+        "code": "# Le document part integralement chez le fournisseur\nresp = client.messages.create(\n    model=MODEL,\n    messages=[{\"role\": \"user\", \"content\": document.texte_integral}],\n)\n",
+        "explanation": "Noms des parties, adresses et numeros de dossier quittent le perimetre du cabinet."
+      },
+      "fixed_example": {
+        "lang": "python",
+        "code": "texte, correspondances = redacteur.pseudonymiser(document.texte_integral)\n# texte contient desormais [PERSONNE_1], [ADRESSE_1], [DOSSIER_1]\n\nresp = client.messages.create(\n    model=MODEL,\n    messages=[{\"role\": \"user\", \"content\": texte}],\n)\nreponse = redacteur.retablir(resp.content, correspondances)\n",
+        "explanation": "Le fournisseur voit la structure du dossier, pas l'identite des parties ; la table de correspondance ne quitte jamais l'application."
+      },
+      "evidence": [
+        {
+          "source_id": "owasp-llm-top10",
+          "doc_path": "owasp-llm-top10/2_0_vulns/LLM02_SensitiveInformationDisclosure.md",
+          "doc_sha256": "bdfa1bcba7575ff7c1804c141cc7944c580cff5cae2e8d9a1bff2b39c40a60f6",
+          "quote": "Implement tokenization to preprocess and sanitize sensitive information. Techniques like pattern matching can detect and redact confidential content before processing.",
+          "url": "https://github.com/OWASP/www-project-top-10-for-large-language-model-applications/blob/020595761a4b7b0c3f9cf01a0457b78f9f1e7f9c/2_0_vulns/LLM02_SensitiveInformationDisclosure.md",
+          "anchor": "Prevention and Mitigation Strategies / Tokenization and Redaction"
+        },
+        {
+          "source_id": "owasp-llm-top10",
+          "doc_path": "owasp-llm-top10/2_0_vulns/LLM02_SensitiveInformationDisclosure.md",
+          "doc_sha256": "bdfa1bcba7575ff7c1804c141cc7944c580cff5cae2e8d9a1bff2b39c40a60f6",
+          "quote": "LLMs, especially when embedded in applications, risk exposing sensitive data, proprietary algorithms, or confidential details through their output.",
+          "url": "https://github.com/OWASP/www-project-top-10-for-large-language-model-applications/blob/020595761a4b7b0c3f9cf01a0457b78f9f1e7f9c/2_0_vulns/LLM02_SensitiveInformationDisclosure.md",
+          "anchor": "Description"
+        }
+      ],
+      "tags": [
+        "pii",
+        "confidentialite",
+        "rgpd",
+        "fournisseur"
+      ],
+      "cwe": [
+        "CWE-359"
+      ],
+      "owasp": [
+        "LLM02:2025"
+      ],
+      "extracted_at": "2026-08-01",
+      "extractor": "claude-opus-5",
+      "ref": "KB-0033"
+    }
+  ]
+}

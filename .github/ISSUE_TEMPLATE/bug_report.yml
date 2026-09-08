@@ -1,0 +1,29 @@
+name: Bug Report / False Positive
+description: Report an issue with the CLI, grounding judge, or a false positive in code audits.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description of the bug
+      description: What went wrong or what rule fired unexpectedly?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps or Code to Reproduce
+      description: Command run or code sample analyzed.
+      placeholder: |
+        uv run kb audit ...
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      value: |
+        - OS: [e.g. macOS, Linux]
+        - Python version: 3.12+
+        - kb version: 0.1.0

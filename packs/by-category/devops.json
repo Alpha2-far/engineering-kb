@@ -1,0 +1,510 @@
+{
+  "category": "devops",
+  "generated_at": "2026-09-08T09:24:06+00:00",
+  "count": 6,
+  "rules": [
+    {
+      "id": "devops/github-actions/context-interpolated-into-run-block",
+      "title": "Passer le contexte GitHub par variable d'environnement, jamais dans run",
+      "category": "devops",
+      "subcategory": "github-actions",
+      "severity": "critical",
+      "confidence": "high",
+      "description": "Une expression de contexte GitHub ne doit pas etre interpolee directement dans un bloc run : la valeur transite par une variable d'environnement intermediaire, qui est ensuite referencee dans le script.",
+      "rationale": "L'interpolation a lieu avant l'execution du shell : la valeur est collee dans le script, si bien qu'un titre de pull request contenant une substitution de commande devient du code execute par le coureur. Ce coureur detient le jeton du depot et les secrets du workflow : l'injection donne donc acces a la chaine de livraison, pas seulement au job. Le passage par l'environnement supprime l'etape d'interpolation.",
+      "remediation": "Declarer la valeur dans env au niveau de l'etape, puis la referencer par la syntaxe du shell dans run. Appliquer la regle a tous les contextes, y compris ceux qui paraissent surs, pour ne pas avoir a juger au cas par cas.",
+      "context": {
+        "languages": [],
+        "frameworks": [],
+        "platforms": [
+          "github-actions"
+        ],
+        "project_types": [
+          "saas",
+          "api",
+          "ai-rag",
+          "static-site",
+          "pipeline",
+          "cli"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "\\$\\{\\{\\s*(github|inputs|env)\\.[^}]*(title|body|message|name|label|ref|head_ref|email|description)[^}]*\\}\\}",
+          "applies_to": [
+            ".github/workflows/*.yml",
+            ".github/workflows/*.yaml"
+          ],
+          "note": "Contexte potentiellement controle par un tiers dans un workflow. Verifier qu'il n'apparait pas dans un bloc run."
+        },
+        {
+          "kind": "grep",
+          "pattern": "pull_request_target",
+          "applies_to": [
+            ".github/workflows/*.yml",
+            ".github/workflows/*.yaml"
+          ],
+          "note": "Declencheur s'executant avec les secrets du depot cible."
+        }
+      ],
+      "autofix": "review",
+      "vulnerable_example": {
+        "lang": "yaml",
+        "code": "- name: Verifier le titre\n  run: |\n    echo \"Titre : ${{ github.event.pull_request.title }}\"\n",
+        "explanation": "Un titre contenant une substitution de commande s'execute sur le coureur."
+      },
+      "fixed_example": {
+        "lang": "yaml",
+        "code": "- name: Verifier le titre\n  env:\n    PR_TITLE: ${{ github.event.pull_request.title }}\n  run: |\n    echo \"Titre : $PR_TITLE\"     # valeur, jamais interpolee dans le script\n",
+        "explanation": "Le shell recoit une variable ; son contenu n'est plus analyse comme du code."
+      },
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.md",
+          "doc_sha256": "241c43a49aa6853f0a1688efb885f3ced52290771309a3ee403d612f47a81fda",
+          "quote": "An attacker may submit a malicious payload via context (e.g., via PR title) that could cause remote execution.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.html",
+          "anchor": "Sanitize user input"
+        },
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.md",
+          "doc_sha256": "241c43a49aa6853f0a1688efb885f3ced52290771309a3ee403d612f47a81fda",
+          "quote": "always use [intermediate environment variables](https://docs.github.com/en/actions/reference/security/secure-use#good-practices-for-mitigating-script-injection-attacks) to pass any context into `run:` and similar code execution blocks.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.html",
+          "anchor": "Sanitize user input"
+        }
+      ],
+      "tags": [
+        "ci-cd",
+        "github-actions",
+        "injection",
+        "chaine-de-livraison"
+      ],
+      "cwe": [
+        "CWE-94"
+      ],
+      "owasp": [
+        "A08:2021"
+      ],
+      "extracted_at": "2026-08-01",
+      "extractor": "claude-opus-5",
+      "ref": "KB-0043"
+    },
+    {
+      "id": "devops/secrets/secret-hardcoded-in-source",
+      "title": "Ne jamais ecrire un secret dans le code ou un fichier de configuration suivi",
+      "category": "devops",
+      "subcategory": "secrets",
+      "severity": "critical",
+      "confidence": "high",
+      "description": "Cles d'API, identifiants de base, jetons et cles privees ne doivent figurer ni dans le code source, ni dans un fichier de configuration versionne, ni dans une instruction ENV ou ARG d'image Docker.",
+      "rationale": "Un secret commite est diffuse a toute personne ayant acces au depot, present dans chaque copie locale, et conserve dans l'historique meme apres suppression du fichier. Le retirer ne suffit donc jamais : il faut le faire tourner. Dans une image, ENV et ARG fuient avec la definition du conteneur, que l'on peut lire sans l'executer.",
+      "remediation": "Charger les secrets depuis un gestionnaire dedie ou la configuration d'environnement de la plateforme, faire echouer le demarrage en cas d'absence, et poser une analyse de secrets en pre-commit et sur les pull requests. Tout secret ayant ete expose est considere comme compromis et remplace.",
+      "context": {
+        "languages": [
+          "python",
+          "typescript"
+        ],
+        "frameworks": [],
+        "platforms": [],
+        "project_types": [
+          "saas",
+          "api",
+          "ai-rag",
+          "static-site",
+          "pipeline",
+          "cli"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "(?i)(api[_-]?key|secret[_-]?key|access[_-]?token|private[_-]?key|client[_-]?secret|service[_-]?role[_-]?key|password)\\s*[:=]\\s*[\"'][A-Za-z0-9_\\-/+.]{20,}[\"']",
+          "applies_to": [
+            "**/*.py",
+            "**/*.ts",
+            "**/*.js",
+            "**/*.tsx",
+            "**/*.json",
+            "**/*.yaml",
+            "**/*.yml",
+            "**/*.toml"
+          ]
+        },
+        {
+          "kind": "grep",
+          "pattern": "(?i)(sk-[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{30,}|eyJ[A-Za-z0-9_-]{20,}\\.[A-Za-z0-9_-]{20,}|-----BEGIN [A-Z ]*PRIVATE KEY-----)",
+          "applies_to": [
+            "**/*"
+          ],
+          "note": "Empreintes de jetons connus et cles privees."
+        },
+        {
+          "kind": "grep",
+          "pattern": "(?i)^\\s*(ENV|ARG)\\s+\\w*(SECRET|TOKEN|KEY|PASSWORD)\\w*\\s*=",
+          "applies_to": [
+            "**/Dockerfile",
+            "**/Dockerfile.*",
+            "**/*.dockerfile"
+          ],
+          "note": "Secret fige dans la definition de l'image."
+        }
+      ],
+      "autofix": "never",
+      "vulnerable_example": {
+        "lang": "python",
+        "code": "SUPABASE_SERVICE_KEY = \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIn0.x\"\n",
+        "explanation": "La cle qui contourne RLS est desormais dans l'historique git, pour toujours."
+      },
+      "fixed_example": {
+        "lang": "python",
+        "code": "SUPABASE_SERVICE_KEY = os.environ[\"SUPABASE_SERVICE_KEY\"]   # absent = echec au demarrage\n",
+        "explanation": "Le secret vit dans la configuration de la plateforme ; le depot ne contient que son nom."
+      },
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Secrets_Management_Cheat_Sheet.md",
+          "doc_sha256": "098b2e35ca5b9846bb35cb80fa9eef59aa97d76e10a12a5ff25b121f2c5770bd",
+          "quote": "Many organizations have them hardcoded within the source code in plaintext, littered throughout configuration files and configuration management tools.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
+          "anchor": "1 Introduction"
+        },
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Secrets_Management_Cheat_Sheet.md",
+          "doc_sha256": "098b2e35ca5b9846bb35cb80fa9eef59aa97d76e10a12a5ff25b121f2c5770bd",
+          "quote": "secrets themselves should never be hardcoded using docker ENV or docker ARG commands, as these can easily leak with the container definitions",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
+          "anchor": "Containers & Orchestrators"
+        }
+      ],
+      "tags": [
+        "secrets",
+        "fuite",
+        "git",
+        "docker"
+      ],
+      "cwe": [
+        "CWE-798"
+      ],
+      "owasp": [
+        "A05:2021",
+        "A07:2021"
+      ],
+      "extracted_at": "2026-08-01",
+      "extractor": "claude-opus-5",
+      "ref": "KB-0045"
+    },
+    {
+      "id": "devops/github-actions/action-not-pinned-to-commit-sha",
+      "title": "Epingler chaque action tierce a un SHA de commit complet",
+      "category": "devops",
+      "subcategory": "github-actions",
+      "severity": "high",
+      "confidence": "high",
+      "description": "Les actions et workflows reutilisables tiers doivent etre references par un SHA de commit complet, jamais par une etiquette de version ni par un nom de branche.",
+      "rationale": "Une etiquette est une reference mutable : celui qui controle le depot de l'action peut la deplacer vers un autre commit sans que rien ne change chez l'appelant. Le code execute dans le coureur, avec le jeton du depot et les secrets du workflow, devient donc silencieusement different. C'est le vecteur des compromissions de chaine de livraison observees sur des actions populaires.",
+      "remediation": "Remplacer chaque reference par le SHA complet, en gardant la version en commentaire pour la lisibilite, et confier la mise a jour a un outil automatise configure avec un delai avant adoption.",
+      "context": {
+        "languages": [],
+        "frameworks": [],
+        "platforms": [
+          "github-actions"
+        ],
+        "project_types": [
+          "saas",
+          "api",
+          "ai-rag",
+          "static-site",
+          "pipeline",
+          "cli"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "^\\s*-?\\s*uses:\\s*[\\w.-]+/[\\w.-]+@(?![0-9a-f]{40})",
+          "applies_to": [
+            ".github/workflows/*.yml",
+            ".github/workflows/*.yaml",
+            ".github/actions/**/*.yml"
+          ],
+          "note": "Reference d'action qui n'est pas un SHA de 40 caracteres."
+        }
+      ],
+      "autofix": "review",
+      "vulnerable_example": {
+        "lang": "yaml",
+        "code": "steps:\n  - uses: actions/checkout@v4        # etiquette mutable\n  - uses: tiers/deploy-action@main   # branche : pire encore\n",
+        "explanation": "Le proprietaire de l'action peut changer le code execute sans modifier cette ligne."
+      },
+      "fixed_example": {
+        "lang": "yaml",
+        "code": "steps:\n  - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0\n    with:\n      persist-credentials: false\n",
+        "explanation": "Le commit execute est fige ; la mise a jour devient un changement visible en revue."
+      },
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.md",
+          "doc_sha256": "241c43a49aa6853f0a1688efb885f3ced52290771309a3ee403d612f47a81fda",
+          "quote": "Check that the used commit belongs to the specified organization/repository. This will prevent dependency confusion attacks, as currently GitHub resolves the commit SHA,",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.html",
+          "anchor": "Always pin all action and reusable workflow versions with a commit hash"
+        },
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.md",
+          "doc_sha256": "241c43a49aa6853f0a1688efb885f3ced52290771309a3ee403d612f47a81fda",
+          "quote": "In general, never check out code using mutable references (e.g., pull request numbers or branch names) - always use immutable references such as a full commit SHA.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.html",
+          "anchor": "Untrusted code checkout"
+        }
+      ],
+      "tags": [
+        "ci-cd",
+        "github-actions",
+        "chaine-de-livraison",
+        "dependances"
+      ],
+      "cwe": [
+        "CWE-1357"
+      ],
+      "owasp": [
+        "A08:2021"
+      ],
+      "extracted_at": "2026-08-01",
+      "extractor": "claude-opus-5",
+      "ref": "KB-0042"
+    },
+    {
+      "id": "devops/containers/container-runs-as-root",
+      "title": "Declarer un utilisateur non privilegie dans l'image Docker",
+      "category": "devops",
+      "subcategory": "containers",
+      "severity": "medium",
+      "confidence": "high",
+      "description": "Une image Docker doit comporter une directive USER designant un compte non privilegie, et le conteneur doit etre lance avec l'interdiction d'acquerir de nouveaux privileges.",
+      "rationale": "Sans directive USER, le processus s'execute en root dans le conteneur. Une execution de code arbitraire dans l'application obtient alors les pleins pouvoirs sur le systeme de fichiers du conteneur et une bien meilleure position pour tenter une evasion. La bascule vers un compte dedie coute une ligne et supprime cette marche.",
+      "remediation": "Creer un utilisateur dans l'image, effectuer les installations avant la bascule, puis declarer USER avant la commande de demarrage. Lancer le conteneur avec l'option interdisant l'elevation par binaire setuid.",
+      "context": {
+        "languages": [],
+        "frameworks": [],
+        "platforms": [
+          "docker",
+          "railway"
+        ],
+        "project_types": [
+          "saas",
+          "api",
+          "ai-rag",
+          "pipeline",
+          "cli"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "absent",
+          "pattern": "^\\s*USER\\s+\\w",
+          "applies_to": [
+            "**/Dockerfile",
+            "**/Dockerfile.*",
+            "**/*.dockerfile"
+          ],
+          "note": "Aucune directive USER : le processus tourne en root."
+        },
+        {
+          "kind": "grep",
+          "pattern": "^\\s*USER\\s+(root|0)\\s*$",
+          "applies_to": [
+            "**/Dockerfile",
+            "**/Dockerfile.*",
+            "**/*.dockerfile"
+          ]
+        }
+      ],
+      "autofix": "review",
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Docker_Security_Cheat_Sheet.md",
+          "doc_sha256": "3442288cd44dda71aed39e82d6abb7d1d6ffb12350ad1a667d8299c2b5488a43",
+          "quote": "Configuring the container to use an unprivileged user is the best way to prevent privilege escalation attacks.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html",
+          "anchor": "RULE"
+        },
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Docker_Security_Cheat_Sheet.md",
+          "doc_sha256": "3442288cd44dda71aed39e82d6abb7d1d6ffb12350ad1a667d8299c2b5488a43",
+          "quote": "Always run your docker images with `--security-opt=no-new-privileges` in order to prevent privilege escalation.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html",
+          "anchor": "Rule / Limit capabilities"
+        }
+      ],
+      "tags": [
+        "docker",
+        "conteneurs",
+        "moindre-privilege"
+      ],
+      "cwe": [
+        "CWE-250"
+      ],
+      "owasp": [
+        "A05:2021"
+      ],
+      "extracted_at": "2026-08-01",
+      "extractor": "claude-opus-5",
+      "ref": "KB-0040"
+    },
+    {
+      "id": "devops/dependencies/dependencies-not-pinned-to-verified-version",
+      "title": "Epingler les dependances a une version verifiee via un fichier de verrouillage",
+      "category": "devops",
+      "subcategory": "dependencies",
+      "severity": "medium",
+      "confidence": "high",
+      "description": "Un outil distribue doit resoudre ses dependances de maniere deterministe : un fichier de verrouillage commite (`uv.lock`, `poetry.lock`, `package-lock.json`) et une installation qui le respecte.\n",
+      "rationale": "Une contrainte ouverte dans un `requirements.txt` — le seul artefact de resolution dans ce mode — laisse chaque installation choisir une version differente. Une version compromise en amont entre alors dans l'outil sans qu'aucun changement local ne l'ait demande. Pour un CLI installe sur des postes de developpeurs ou en CI, c'est une execution de code sur des machines de confiance.\n",
+      "remediation": "Commiter le fichier de verrouillage et installer avec `uv sync --frozen`, `poetry install`, ou `npm ci` — jamais `pip install -r` ni `npm install` dans un contexte reproductible. Faire remonter les mises a jour par des changements de lock explicites et relus.\n",
+      "context": {
+        "languages": [
+          "python",
+          "javascript",
+          "typescript"
+        ],
+        "frameworks": [],
+        "platforms": [],
+        "project_types": [
+          "cli",
+          "pipeline",
+          "saas",
+          "api",
+          "ai-rag"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "^\\s*[a-zA-Z0-9_.-]+\\s*(>=|>|\\*|~=)",
+          "applies_to": [
+            "**/requirements*.txt"
+          ],
+          "note": "contrainte ouverte la ou requirements.txt tient lieu de verrouillage"
+        },
+        {
+          "kind": "grep",
+          "pattern": "(pip\\s+install\\s+-r|npm\\s+install(?!\\s+-g))",
+          "applies_to": [
+            "**/Dockerfile*",
+            "**/*.yml",
+            "**/*.yaml",
+            "**/Makefile",
+            "**/*.sh"
+          ],
+          "note": "installation qui ignore le verrouillage — attendu `npm ci` / `uv sync --frozen`"
+        }
+      ],
+      "autofix": "never",
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Software_Supply_Chain_Security_Cheat_Sheet.md",
+          "doc_sha256": "d75f515a2518562968355b343879fb9184c5f1e9db276e0509b4455c65f4ab10",
+          "quote": "To reduce the likelihood that a compromised or vulnerable version is unwittingly pulled into an application, one should limit the applications dependencies to a specific version that has been previously verified as legitimate and secure.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Software_Supply_Chain_Security_Cheat_Sheet.html",
+          "anchor": "Lockfile/Version Pinning"
+        }
+      ],
+      "tags": [
+        "cli",
+        "dependencies",
+        "supply-chain",
+        "lockfile"
+      ],
+      "cwe": [
+        "CWE-1104"
+      ],
+      "owasp": [
+        "A03:2025"
+      ],
+      "extracted_at": "2026-08-10",
+      "extractor": "claude-opus-4-6",
+      "ref": "KB-0041"
+    },
+    {
+      "id": "devops/github-actions/workflow-permissions-not-restricted",
+      "title": "Partir de permissions vides et n'accorder que le necessaire par job",
+      "category": "devops",
+      "subcategory": "github-actions",
+      "severity": "medium",
+      "confidence": "high",
+      "description": "Un workflow doit declarer des permissions vides a son niveau, puis accorder explicitement au niveau de chaque job les seules permissions dont il a besoin.",
+      "rationale": "Sans declaration, le jeton du workflow herite des permissions par defaut du depot, souvent en ecriture sur tout le contenu. Une seule etape compromise, ou une action tierce malveillante, peut alors pousser du code, modifier des versions publiees ou ouvrir des acces. Partir de zero rend le privilege visible dans le fichier.",
+      "remediation": "Ecrire permissions vide au niveau du workflow, puis ajouter par job le strict necessaire. Utiliser des environnements avec approbation requise pour les deploiements en production.",
+      "context": {
+        "languages": [],
+        "frameworks": [],
+        "platforms": [
+          "github-actions"
+        ],
+        "project_types": [
+          "saas",
+          "api",
+          "ai-rag",
+          "static-site",
+          "pipeline",
+          "cli"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "absent",
+          "pattern": "^permissions:",
+          "applies_to": [
+            ".github/workflows/*.yml",
+            ".github/workflows/*.yaml"
+          ],
+          "note": "Aucune declaration de permissions au niveau du workflow : les valeurs par defaut du depot s'appliquent."
+        },
+        {
+          "kind": "grep",
+          "pattern": "^\\s*permissions:\\s*write-all",
+          "applies_to": [
+            ".github/workflows/*.yml",
+            ".github/workflows/*.yaml"
+          ]
+        }
+      ],
+      "autofix": "review",
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.md",
+          "doc_sha256": "241c43a49aa6853f0a1688efb885f3ced52290771309a3ee403d612f47a81fda",
+          "quote": "Always set `permissions: {}` at the workflow level to disable all permissions by default. Then, grant only the specific permissions needed at the job level.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/GitHub_Actions_Security_Cheat_Sheet.html",
+          "anchor": "Minimize GITHUB_TOKEN permissions"
+        }
+      ],
+      "tags": [
+        "ci-cd",
+        "github-actions",
+        "moindre-privilege"
+      ],
+      "cwe": [
+        "CWE-250"
+      ],
+      "owasp": [
+        "A01:2021"
+      ],
+      "extracted_at": "2026-08-01",
+      "extractor": "claude-opus-5",
+      "ref": "KB-0044"
+    }
+  ]
+}

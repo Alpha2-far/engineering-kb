@@ -1,0 +1,476 @@
+{
+  "category": "authentication",
+  "generated_at": "2026-09-08T09:24:06+00:00",
+  "count": 5,
+  "rules": [
+    {
+      "id": "authentication/jwt/algorithm-not-pinned-at-verification",
+      "title": "Imposer l'algorithme attendu a la verification d'un JWT",
+      "category": "authentication",
+      "subcategory": "jwt",
+      "severity": "critical",
+      "confidence": "high",
+      "description": "La verification d'un JWT doit exiger explicitement l'algorithme attendu, au lieu de se fier a l'en-tete alg du jeton presente.",
+      "rationale": "L'en-tete du jeton est fourni par celui qui le presente : lui laisser choisir l'algorithme revient a laisser l'attaquant choisir comment sa signature sera verifiee. La valeur none a fait accepter des jetons non signes par plusieurs bibliotheques, et un basculement de RS256 vers HS256 permet de signer avec la cle publique, qui est publique par construction. Le controle doit venir du code du verificateur, pas du jeton.",
+      "remediation": "Passer la liste des algorithmes acceptes a la fonction de verification et refuser tout le reste, y compris none. Verifier egalement les revendications d'emetteur et d'audience, qu'une signature valide ne garantit pas.",
+      "context": {
+        "languages": [
+          "python",
+          "typescript"
+        ],
+        "frameworks": [
+          "fastapi",
+          "next",
+          "express"
+        ],
+        "platforms": [],
+        "project_types": [
+          "saas",
+          "api",
+          "ai-rag"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "(?i)jwt\\.decode\\s*\\([^)]*verify_signature\\s*:\\s*False|jwt\\.decode\\s*\\([^)]*options\\s*=\\s*\\{[^}]*verify[^}]*False",
+          "applies_to": [
+            "**/*.py"
+          ],
+          "note": "Verification de signature desactivee."
+        },
+        {
+          "kind": "grep",
+          "pattern": "(?i)(jwt\\.decode|jwtVerify|verify)\\s*\\(\\s*\\w+\\s*,\\s*\\w+\\s*\\)",
+          "applies_to": [
+            "**/*.py",
+            "**/*.ts",
+            "**/*.js"
+          ],
+          "note": "Verification sans argument algorithms : l'en-tete du jeton decide."
+        },
+        {
+          "kind": "grep",
+          "pattern": "(?i)[\"']alg[\"']\\s*:\\s*[\"']none[\"']|algorithms\\s*=\\s*\\[[^\\]]*none",
+          "applies_to": [
+            "**/*.py",
+            "**/*.ts",
+            "**/*.js"
+          ]
+        }
+      ],
+      "autofix": "review",
+      "vulnerable_example": {
+        "lang": "python",
+        "code": "payload = jwt.decode(token, SECRET)     # l'algorithme vient du jeton\n",
+        "explanation": "Un jeton forge avec alg none ou HS256 peut passer selon la bibliotheque."
+      },
+      "fixed_example": {
+        "lang": "python",
+        "code": "payload = jwt.decode(\n    token,\n    SECRET,\n    algorithms=[\"HS256\"],          # impose par le code\n    audience=SETTINGS.audience,\n    issuer=SETTINGS.issuer,\n)\n",
+        "explanation": "Tout jeton annoncant un autre algorithme est rejete avant lecture des claims."
+      },
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/JSON_Web_Token_Cheat_Sheet.md",
+          "doc_sha256": "b465e68c80973b8e4e502bbef2642cf026ecdeade84cec50defa5878e08d34df",
+          "quote": "some libraries treated tokens signed with the none algorithm as a valid token with a verified signature",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_Cheat_Sheet.html",
+          "anchor": "Issues / None Hashing Algorithm"
+        },
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/JSON_Web_Token_Cheat_Sheet.md",
+          "doc_sha256": "b465e68c80973b8e4e502bbef2642cf026ecdeade84cec50defa5878e08d34df",
+          "quote": "Last, during token validation, explicitly request that the expected algorithm was used.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_Cheat_Sheet.html",
+          "anchor": "Issues / None Hashing Algorithm / How to Prevent"
+        }
+      ],
+      "tags": [
+        "jwt",
+        "authentification",
+        "signature"
+      ],
+      "cwe": [
+        "CWE-347"
+      ],
+      "owasp": [
+        "A02:2021",
+        "A07:2021"
+      ],
+      "extracted_at": "2026-08-01",
+      "extractor": "claude-opus-5",
+      "ref": "KB-0027"
+    },
+    {
+      "id": "authentication/password-storage/fast-hash-used-for-passwords",
+      "title": "Hacher les mots de passe avec Argon2id, scrypt, bcrypt ou PBKDF2",
+      "category": "authentication",
+      "subcategory": "password-storage",
+      "severity": "critical",
+      "confidence": "high",
+      "description": "Un mot de passe doit etre hache avec un algorithme lent et parametrable (Argon2id en premier choix, sinon scrypt, bcrypt ou PBKDF2), avec un sel unique par mot de passe. Ni stockage en clair, ni chiffrement reversible, ni fonction de hachage rapide de la famille SHA ou MD5.",
+      "rationale": "SHA-256 est concu pour etre rapide : c'est exactement la propriete que l'attaquant exploite, en essayant des milliards de candidats a la seconde sur un GPU. Un algorithme lent et gourmand en memoire rend chaque essai couteux, et le sel unique interdit d'attaquer toute la base d'un seul calcul. Le chiffrement est exclu parce qu'il est reversible : la cle compromise rend tous les mots de passe en clair.",
+      "remediation": "Utiliser Argon2id avec au minimum 19 MiB de memoire, 2 iterations et 1 degre de parallelisme ; bcrypt avec un facteur de travail d'au moins 10 pour un systeme existant. Passer par la bibliotheque du framework, qui gere le sel, et rehacher au moment de la connexion quand les parametres evoluent.",
+      "context": {
+        "languages": [
+          "python",
+          "typescript"
+        ],
+        "frameworks": [],
+        "platforms": [],
+        "project_types": [
+          "saas",
+          "api"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "(?i)(hashlib\\.(md5|sha1|sha256|sha512)|createHash\\s*\\(\\s*[\"'](md5|sha1|sha256)[\"'])",
+          "applies_to": [
+            "**/*.py",
+            "**/*.ts",
+            "**/*.js"
+          ],
+          "note": "Hachage rapide. A signaler si la valeur hachee est un mot de passe."
+        },
+        {
+          "kind": "grep",
+          "pattern": "(?i)(password|mot_de_passe|passwd)\\s*=\\s*[^=\\n]{0,40}(md5|sha1|sha256|sha512|encrypt|cipher)\\s*\\(",
+          "applies_to": [
+            "**/*.py",
+            "**/*.ts"
+          ]
+        },
+        {
+          "kind": "absent",
+          "pattern": "(?i)(argon2|bcrypt|scrypt|pbkdf2|passlib|CryptContext)",
+          "applies_to": [
+            "**/auth/**/*.py",
+            "**/*password*.py",
+            "**/*auth*.py"
+          ],
+          "note": "Module d'authentification sans aucune fonction de hachage adaptee."
+        }
+      ],
+      "autofix": "never",
+      "vulnerable_example": {
+        "lang": "python",
+        "code": "empreinte = hashlib.sha256(mot_de_passe.encode()).hexdigest()\ndb.save(User(email=email, password_hash=empreinte))\n",
+        "explanation": "Rapide et sans sel : une fuite de base se casse au dictionnaire en quelques heures."
+      },
+      "fixed_example": {
+        "lang": "python",
+        "code": "from argon2 import PasswordHasher\n\nph = PasswordHasher(memory_cost=19456, time_cost=2, parallelism=1)\ndb.save(User(email=email, password_hash=ph.hash(mot_de_passe)))\n",
+        "explanation": "Sel genere par la bibliotheque, cout memoire impose a chaque essai."
+      },
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Password_Storage_Cheat_Sheet.md",
+          "doc_sha256": "59e6ce03452bb2607e690010487389db388af969d43ce6acb535a3e2f128e14e",
+          "quote": "Passwords should never be stored in plain text. Instead, they must be protected using strong, slow hashing algorithms such as Argon2id, bcrypt, or PBKDF2. A unique salt must be added to each password to prevent attackers from using precomputed lookup tables like rainbow tables.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html",
+          "anchor": "Introduction"
+        },
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Password_Storage_Cheat_Sheet.md",
+          "doc_sha256": "59e6ce03452bb2607e690010487389db388af969d43ce6acb535a3e2f128e14e",
+          "quote": "A salt is a unique, randomly generated string that is added to each password as part of the hashing process.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html",
+          "anchor": "Methods for Enhancing Password Storage / Salting"
+        }
+      ],
+      "tags": [
+        "mots-de-passe",
+        "hachage",
+        "argon2",
+        "cryptographie"
+      ],
+      "cwe": [
+        "CWE-916",
+        "CWE-759"
+      ],
+      "owasp": [
+        "A02:2021"
+      ],
+      "extracted_at": "2026-08-01",
+      "extractor": "claude-opus-5",
+      "ref": "KB-0029"
+    },
+    {
+      "id": "authentication/jwt/hmac-secret-too-short",
+      "title": "Utiliser un secret HMAC long et aleatoire pour signer les JWT",
+      "category": "authentication",
+      "subcategory": "jwt",
+      "severity": "high",
+      "confidence": "high",
+      "description": "Le secret utilise pour signer un JWT en HMAC doit compter au moins 64 caracteres issus d'une source d'alea sure, etre unique par environnement, et ne jamais figurer dans le code ni avoir de valeur de repli.",
+      "rationale": "La securite d'un jeton HMAC ne depend de rien d'autre que de la force du secret. Un attaquant qui detient un jeton valide peut attaquer le secret hors ligne, sans limite de debit et sans laisser de trace ; une phrase courte ou un mot du dictionnaire tombe en quelques minutes. Le secret casse, il peut forger n'importe quelle identite, y compris administrateur.",
+      "remediation": "Generer le secret avec un generateur cryptographique, le stocker dans la configuration d'environnement, et faire echouer le demarrage s'il est absent plutot que de retomber sur une valeur par defaut. Envisager une signature asymetrique quand plusieurs services verifient les jetons.",
+      "context": {
+        "languages": [
+          "python",
+          "typescript"
+        ],
+        "frameworks": [],
+        "platforms": [],
+        "project_types": [
+          "saas",
+          "api",
+          "ai-rag"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "(?i)(jwt_secret|secret_key|JWT_SECRET|SECRET_KEY)\\s*[:=]\\s*[\"'][^\"']{0,63}[\"']",
+          "applies_to": [
+            "**/*.py",
+            "**/*.ts",
+            "**/*.js",
+            "**/*.env*"
+          ],
+          "note": "Secret litteral de moins de 64 caracteres."
+        },
+        {
+          "kind": "grep",
+          "pattern": "(?i)(getenv|environ\\.get|process\\.env\\.\\w*SECRET\\w*)[^)\\n]{0,60}(,\\s*[\"'][^\"']+[\"']|\\|\\|\\s*[\"'])",
+          "applies_to": [
+            "**/*.py",
+            "**/*.ts",
+            "**/*.js"
+          ],
+          "note": "Valeur de repli sur un secret : l'environnement mal configure demarre avec un secret connu."
+        }
+      ],
+      "autofix": "never",
+      "vulnerable_example": {
+        "lang": "python",
+        "code": "SECRET = os.getenv(\"JWT_SECRET\", \"dev-secret\")   # repli en production\n",
+        "explanation": "Une variable oubliee au deploiement fait signer les jetons avec une valeur presente dans le depot."
+      },
+      "fixed_example": {
+        "lang": "python",
+        "code": "SECRET = os.environ[\"JWT_SECRET\"]       # KeyError au demarrage si absent\nif len(SECRET) < 64:\n    raise RuntimeError(\"JWT_SECRET doit faire au moins 64 caracteres\")\n",
+        "explanation": "L'application refuse de demarrer mal configuree, au lieu de demarrer vulnerable."
+      },
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/JSON_Web_Token_Cheat_Sheet.md",
+          "doc_sha256": "b465e68c80973b8e4e502bbef2642cf026ecdeade84cec50defa5878e08d34df",
+          "quote": "As this secret would never need to be typed by a human, it should be at least 64 characters, and generated using a",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_Cheat_Sheet.html",
+          "anchor": "Issues / Weak Token Secret / How to Prevent"
+        },
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/JSON_Web_Token_Cheat_Sheet.md",
+          "doc_sha256": "b465e68c80973b8e4e502bbef2642cf026ecdeade84cec50defa5878e08d34df",
+          "quote": "the security of the token is entirely dependent on the strength of the secret used with the HMAC. If an attacker can obtain a valid JWT, they can then carry out an offline attack",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_Cheat_Sheet.html",
+          "anchor": "Issues / Weak Token Secret / Symptom"
+        }
+      ],
+      "tags": [
+        "jwt",
+        "secrets",
+        "cryptographie"
+      ],
+      "cwe": [
+        "CWE-326",
+        "CWE-798"
+      ],
+      "owasp": [
+        "A02:2021"
+      ],
+      "extracted_at": "2026-08-01",
+      "extractor": "claude-opus-5",
+      "ref": "KB-0028"
+    },
+    {
+      "id": "authentication/enumeration/login-reveals-account-existence",
+      "title": "Ne pas laisser l'echec d'authentification reveler l'existence du compte",
+      "category": "authentication",
+      "subcategory": "enumeration",
+      "severity": "medium",
+      "confidence": "high",
+      "description": "Un echec d'authentification doit produire la meme reponse et la meme duree, que l'identifiant existe ou non : message identique, code identique, et verification d'un condensat factice quand le compte est absent.",
+      "rationale": "Un point d'entree qui distingue compte inconnu et mot de passe errone offre un oracle d'existence : on y teste une liste d'adresses et on obtient la liste des clients. Pour un produit destine aux cabinets d'avocats, la seule liste des comptes est deja une information commerciale et deontologique sensible. La difference se lit dans le message, mais aussi dans le temps de reponse quand le chemin du compte inconnu court-circuite la verification.",
+      "remediation": "Retourner un message unique pour tous les echecs, et executer la verification de mot de passe contre un condensat factice lorsque le compte n'existe pas. Appliquer la meme discipline aux parcours d'inscription et de reinitialisation.",
+      "context": {
+        "languages": [
+          "python",
+          "typescript"
+        ],
+        "frameworks": [
+          "fastapi",
+          "next"
+        ],
+        "platforms": [],
+        "project_types": [
+          "saas",
+          "api",
+          "ai-rag"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "(?i)(detail|message|error)\\s*[:=]\\s*[\"'][^\"']*(utilisateur inconnu|user not found|unknown user|no such user|email not registered|compte introuvable)",
+          "applies_to": [
+            "**/*.py",
+            "**/*.ts",
+            "**/*.js"
+          ],
+          "note": "Message d'echec revelant l'absence du compte."
+        },
+        {
+          "kind": "grep",
+          "pattern": "(?i)if\\s+not\\s+(user|utilisateur|account|compte)\\s*:\\s*\\n\\s*(return|raise)",
+          "applies_to": [
+            "**/auth/**/*.py",
+            "**/*auth*.py",
+            "**/*login*.py"
+          ],
+          "note": "Sortie anticipee quand le compte est absent : la duree de reponse differe."
+        }
+      ],
+      "autofix": "review",
+      "evidence": [
+        {
+          "source_id": "fastapi",
+          "doc_path": "fastapi/docs/en/docs/tutorial/security/oauth2-jwt.md",
+          "doc_sha256": "09de4db00267448e11cbdc198154c6bf3ac4aa48cb88ecb87ee4e71d44d9272b",
+          "quote": "When `authenticate_user` is called with a username that doesn't exist in the database, we still run `verify_password` against a dummy hash.",
+          "url": "https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt/",
+          "anchor": "Update the dependencies"
+        },
+        {
+          "source_id": "fastapi",
+          "doc_path": "fastapi/docs/en/docs/tutorial/security/oauth2-jwt.md",
+          "doc_sha256": "09de4db00267448e11cbdc198154c6bf3ac4aa48cb88ecb87ee4e71d44d9272b",
+          "quote": "This ensures the endpoint takes roughly the same amount of time to respond whether the username is valid or not, preventing **timing attacks** that could be used to enumerate existing usernames.",
+          "url": "https://fastapi.tiangolo.com/tutorial/security/oauth2-jwt/",
+          "anchor": "Update the dependencies"
+        }
+      ],
+      "tags": [
+        "fastapi",
+        "enumeration",
+        "authentification",
+        "vie-privee"
+      ],
+      "cwe": [
+        "CWE-204"
+      ],
+      "owasp": [
+        "A07:2021"
+      ],
+      "extracted_at": "2026-08-01",
+      "extractor": "claude-opus-5",
+      "ref": "KB-0026"
+    },
+    {
+      "id": "authentication/timing/secret-compared-with-equality-operator",
+      "title": "Comparer secrets et jetons en temps constant",
+      "category": "authentication",
+      "subcategory": "timing",
+      "severity": "medium",
+      "confidence": "high",
+      "description": "La comparaison d'un secret fourni par l'appelant — mot de passe, jeton d'API, signature de webhook — se fait avec une primitive a temps constant, jamais avec l'operateur d'egalite du langage.",
+      "rationale": "La comparaison de chaines s'arrete au premier caractere different : plus le prefixe fourni est correct, plus la reponse tarde. Cet ecart de quelques microsecondes se mesure a distance sur un grand nombre de requetes, et permet de reconstituer le secret caractere par caractere — l'application aide alors l'attaquant a la deviner. Une primitive a temps constant supprime le signal.",
+      "remediation": "Utiliser secrets.compare_digest en Python, timingSafeEqual en Node. Appliquer la meme logique au chemin d'echec de l'authentification : quand l'identifiant n'existe pas, verifier tout de meme un condensat factice pour que la duree de reponse ne revele pas l'existence du compte.",
+      "context": {
+        "languages": [
+          "python",
+          "typescript",
+          "javascript"
+        ],
+        "frameworks": [
+          "fastapi",
+          "express",
+          "next"
+        ],
+        "platforms": [],
+        "project_types": [
+          "saas",
+          "api",
+          "ai-rag"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "(?i)if\\s+[\\w.\\[\\]\"']*\\b(password|passwd|token|secret|signature|api_key|apikey)\\b[\\w.\\[\\]\"']*\\s*(==|!=)",
+          "applies_to": [
+            "**/*.py",
+            "**/*.ts",
+            "**/*.js"
+          ],
+          "note": "Secret compare avec l'operateur d'egalite : duree dependante du contenu."
+        },
+        {
+          "kind": "absent",
+          "pattern": "(?i)(compare_digest|timingSafeEqual)",
+          "applies_to": [
+            "**/*webhook*.py",
+            "**/*webhook*.ts",
+            "**/auth/**/*.py"
+          ],
+          "note": "Verification de signature ou d'authentification sans comparaison a temps constant."
+        }
+      ],
+      "autofix": "review",
+      "vulnerable_example": {
+        "lang": "python",
+        "code": "if credentials.username == \"stanleyjobson\" and credentials.password == \"swordfish\":\n    ...\n",
+        "explanation": "Le temps de reponse croit avec la longueur du prefixe correct : le secret se devine caractere par caractere."
+      },
+      "fixed_example": {
+        "lang": "python",
+        "code": "import secrets\n\nutilisateur_ok = secrets.compare_digest(\n    credentials.username.encode(\"utf8\"), b\"stanleyjobson\"\n)\nmot_de_passe_ok = secrets.compare_digest(\n    credentials.password.encode(\"utf8\"), b\"swordfish\"\n)\nif not (utilisateur_ok and mot_de_passe_ok):\n    raise HTTPException(status_code=401, detail=\"Identifiants incorrects\")\n",
+        "explanation": "La duree de comparaison ne depend plus du contenu : le canal auxiliaire disparait."
+      },
+      "evidence": [
+        {
+          "source_id": "fastapi",
+          "doc_path": "fastapi/docs/en/docs/advanced/security/http-basic-auth.md",
+          "doc_sha256": "76feaf284219c786bbf96684d0b09f40ff4ea49a978631e13a6d89502998761e",
+          "quote": "But by using the `secrets.compare_digest()` it will be secure against a type of attacks called \"timing attacks\".",
+          "url": "https://fastapi.tiangolo.com/advanced/security/http-basic-auth/",
+          "anchor": "Timing Attacks"
+        },
+        {
+          "source_id": "fastapi",
+          "doc_path": "fastapi/docs/en/docs/advanced/security/http-basic-auth.md",
+          "doc_sha256": "76feaf284219c786bbf96684d0b09f40ff4ea49a978631e13a6d89502998761e",
+          "quote": "At that point, by noticing that the server took some microseconds longer to send the \"Incorrect username or password\" response, the attackers will know that they got _something_ right, some of the initial letters were right.",
+          "url": "https://fastapi.tiangolo.com/advanced/security/http-basic-auth/",
+          "anchor": "The time to answer helps the attackers"
+        }
+      ],
+      "tags": [
+        "fastapi",
+        "timing",
+        "authentification",
+        "webhook",
+        "canal-auxiliaire"
+      ],
+      "cwe": [
+        "CWE-208"
+      ],
+      "owasp": [
+        "A07:2021"
+      ],
+      "extracted_at": "2026-08-01",
+      "extractor": "claude-opus-5",
+      "ref": "KB-0030"
+    }
+  ]
+}

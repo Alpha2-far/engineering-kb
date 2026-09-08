@@ -1,0 +1,36 @@
+# L'archive brute n'est jamais commitee.
+#
+# Deux raisons distinctes :
+#   1. Volume — des centaines de Mo de documentation tierce polluerait le depot.
+#   2. Licences — plusieurs sources (MITRE, PortSwigger, Oracle, AWS, MongoDB)
+#      autorisent la consultation mais pas la rediffusion. raw/ est une archive
+#      LOCALE de verification ; ce qu'on publie, ce sont les regles derivees et
+#      leurs citations courtes.
+#
+# Consequence : `raw/` est reconstructible a tout moment par `uv run kb acquire`,
+# et son absence fait echouer la validation d'ancrage — ce qui est le comportement
+# voulu (pas d'archive, pas de preuve, pas de regle).
+raw/
+
+# Python & Virtual Environments
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Secrets and local environments
+.env
+.env.*
+!.env.example
+
+# Distribution & Build
+dist/
+build/
+*.egg-info/
+
+# OS specific files
+.DS_Store
+Thumbs.db

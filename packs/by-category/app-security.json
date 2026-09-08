@@ -1,0 +1,769 @@
+{
+  "category": "app-security",
+  "generated_at": "2026-09-08T09:24:06+00:00",
+  "count": 9,
+  "rules": [
+    {
+      "id": "app-security/command-injection/user-input-concatenated-into-shell",
+      "title": "Ne jamais construire une commande shell par concatenation d'entree utilisateur",
+      "category": "app-security",
+      "subcategory": "command-injection",
+      "severity": "critical",
+      "confidence": "high",
+      "description": "Un CLI qui compose une commande systeme en concatenant un argument recu (argv, stdin, variable d'environnement) doit passer par une API qui separe le programme de ses arguments, sans shell intermediaire.\n",
+      "rationale": "Le shell interprete les metacaracteres `& | ; $ > < ` \\ ! ' \" ( )`. Un argument contenant l'un d'eux ne complete plus la commande : il en ajoute une seconde, qui s'execute avec les privileges du process appelant. En Python, c'est exactement ce que `shell=True` reintroduit apres qu'une liste d'arguments l'ait supprime.\n",
+      "remediation": "Passer une liste d'arguments a `subprocess.run([...])` sans `shell=True`. Bannir `os.system` et `os.popen`. Si le shell est inevitable, valider les arguments contre une allowlist stricte avant de les composer.\n",
+      "context": {
+        "languages": [
+          "python",
+          "javascript",
+          "typescript"
+        ],
+        "frameworks": [],
+        "platforms": [],
+        "project_types": [
+          "cli",
+          "pipeline",
+          "saas",
+          "api",
+          "ai-rag"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "shell\\s*=\\s*True",
+          "applies_to": [
+            "**/*.py"
+          ],
+          "note": "subprocess avec interpretation shell"
+        },
+        {
+          "kind": "grep",
+          "pattern": "os\\.(system|popen)\\s*\\(",
+          "applies_to": [
+            "**/*.py"
+          ],
+          "note": "appel shell direct"
+        },
+        {
+          "kind": "grep",
+          "pattern": "child_process\\.exec\\s*\\(",
+          "applies_to": [
+            "**/*.js",
+            "**/*.ts"
+          ],
+          "note": "exec passe par le shell, execFile non"
+        }
+      ],
+      "autofix": "review",
+      "vulnerable_example": {
+        "lang": "python",
+        "code": "subprocess.run(f\"git clone {args.repo}\", shell=True)\n# args.repo = \"x; rm -rf ~\" execute deux commandes\n"
+      },
+      "fixed_example": {
+        "lang": "python",
+        "code": "subprocess.run([\"git\", \"clone\", \"--\", args.repo], shell=False, check=True)\n"
+      },
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.md",
+          "doc_sha256": "39c81f1c1518782027ff8c9b1aef2df05e14aabbf1953f398afd52ad635669ea",
+          "quote": "Command injection (or OS Command Injection) is a type of injection where software that constructs a system command using externally influenced input does not correctly neutralize the input from special elements that can modify the initially intended command.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html",
+          "anchor": "Introduction"
+        },
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.md",
+          "doc_sha256": "39c81f1c1518782027ff8c9b1aef2df05e14aabbf1953f398afd52ad635669ea",
+          "quote": "The primary defense is to avoid calling OS commands directly. Built-in library functions are a very good alternative to OS Commands, as they cannot be manipulated to perform tasks other than those it is intended to do.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html",
+          "anchor": "Defense Option 1: Avoid calling OS commands directly"
+        }
+      ],
+      "tags": [
+        "cli",
+        "shell",
+        "subprocess",
+        "injection"
+      ],
+      "cwe": [
+        "CWE-78"
+      ],
+      "owasp": [
+        "A03:2021"
+      ],
+      "extracted_at": "2026-08-10",
+      "extractor": "claude-opus-4-6",
+      "ref": "KB-0018"
+    },
+    {
+      "id": "app-security/deserialization/untrusted-data-loaded-with-pickle-or-yaml",
+      "title": "Ne jamais deserialiser un fichier local avec pickle ou yaml.load",
+      "category": "app-security",
+      "subcategory": "deserialization",
+      "severity": "critical",
+      "confidence": "high",
+      "description": "Un CLI qui lit un cache, un etat ou une configuration depuis le disque doit utiliser un format de donnees inerte (JSON, `yaml.safe_load`), jamais `pickle.load` ni `yaml.load` sans chargeur sur.\n",
+      "rationale": "`pickle` et `yaml.load` reconstruisent des objets arbitraires : le document `!!python/object/apply:os.system ['ipconfig']` execute la commande au chargement. Pour un CLI, le fichier n'a pas besoin de venir du reseau — un cache dans un repertoire partage, un artefact de CI ou un fichier de projet clone suffisent a porter la charge.\n",
+      "remediation": "Remplacer `yaml.load(f)` par `yaml.safe_load(f)`, et `pickle` par JSON. Si un format binaire est indispensable, signer le fichier et verifier la signature avant de le charger.\n",
+      "context": {
+        "languages": [
+          "python"
+        ],
+        "frameworks": [],
+        "platforms": [],
+        "project_types": [
+          "cli",
+          "pipeline",
+          "saas",
+          "api",
+          "ai-rag"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "pickle\\.(load|loads)\\s*\\(",
+          "applies_to": [
+            "**/*.py"
+          ],
+          "note": "deserialisation arbitraire"
+        },
+        {
+          "kind": "grep",
+          "pattern": "yaml\\.load\\s*\\((?![^)]*SafeLoader)",
+          "applies_to": [
+            "**/*.py"
+          ],
+          "note": "yaml.load sans SafeLoader"
+        }
+      ],
+      "autofix": "review",
+      "vulnerable_example": {
+        "lang": "python",
+        "code": "state = pickle.load(open(CACHE_PATH, \"rb\"))\nconfig = yaml.load(open(\"config.yaml\"))\n"
+      },
+      "fixed_example": {
+        "lang": "python",
+        "code": "state = json.loads(Path(CACHE_PATH).read_text())\nconfig = yaml.safe_load(Path(\"config.yaml\").read_text())\n"
+      },
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Deserialization_Cheat_Sheet.md",
+          "doc_sha256": "16b75d075f4c4ab19f1cb46763ec8697aeb24d7660cbcd6ebb5a1d6f15b3f0f4",
+          "quote": "The following API in Python will be vulnerable to serialization attack. Search code for the pattern below.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html",
+          "anchor": "Python: Clear-box Review"
+        },
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Deserialization_Cheat_Sheet.md",
+          "doc_sha256": "16b75d075f4c4ab19f1cb46763ec8697aeb24d7660cbcd6ebb5a1d6f15b3f0f4",
+          "quote": "document = \"!!python/object/apply:os.system ['ipconfig']\"",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html",
+          "anchor": "Python: PyYAML with load"
+        }
+      ],
+      "tags": [
+        "cli",
+        "pickle",
+        "yaml",
+        "deserialization"
+      ],
+      "cwe": [
+        "CWE-502"
+      ],
+      "owasp": [],
+      "extracted_at": "2026-08-10",
+      "extractor": "claude-opus-4-6",
+      "ref": "KB-0020"
+    },
+    {
+      "id": "app-security/command-injection/executable-chosen-by-user-input",
+      "title": "Coder en dur l'executable appele plutot que de le lire depuis l'entree",
+      "category": "app-security",
+      "subcategory": "command-injection",
+      "severity": "high",
+      "confidence": "high",
+      "description": "Le nom du programme lance par un CLI doit etre fixe dans le code ou resolu contre une liste d'autorisation explicite, jamais compose a partir d'un argument, d'une variable d'environnement ou d'un fichier de config.\n",
+      "rationale": "Si l'appelant choisit le binaire, aucune validation d'argument ne compte : il ne detourne plus la commande, il en designe une autre. La commande elle-meme doit etre validee contre une liste d'autorisation, au meme titre que ses arguments.\n",
+      "remediation": "Definir un dictionnaire des commandes permises et n'accepter qu'une cle de ce dictionnaire. Refuser toute valeur absente de la liste au lieu de la nettoyer.\n",
+      "context": {
+        "languages": [
+          "python",
+          "javascript",
+          "typescript"
+        ],
+        "frameworks": [],
+        "platforms": [],
+        "project_types": [
+          "cli",
+          "pipeline"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "subprocess\\.(run|Popen|call)\\s*\\(\\s*(args\\.|os\\.environ|sys\\.argv|config\\[)",
+          "applies_to": [
+            "**/*.py"
+          ],
+          "note": "le binaire lui-meme provient d'une entree"
+        }
+      ],
+      "autofix": "review",
+      "vulnerable_example": {
+        "lang": "python",
+        "code": "subprocess.run([args.tool, \"--version\"])\n"
+      },
+      "fixed_example": {
+        "lang": "python",
+        "code": "TOOLS = {\"git\": \"/usr/bin/git\", \"docker\": \"/usr/bin/docker\"}\nif args.tool not in TOOLS:\n    raise SystemExit(f\"outil non autorise : {args.tool}\")\nsubprocess.run([TOOLS[args.tool], \"--version\"])\n"
+      },
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.md",
+          "doc_sha256": "39c81f1c1518782027ff8c9b1aef2df05e14aabbf1953f398afd52ad635669ea",
+          "quote": "When it comes to the **commands** used, these must be validated against a list of allowed commands.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html",
+          "anchor": "Layer 2"
+        },
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.md",
+          "doc_sha256": "39c81f1c1518782027ff8c9b1aef2df05e14aabbf1953f398afd52ad635669ea",
+          "quote": "**Hardcode the command**: never allow the user to choose which executable to run.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html",
+          "anchor": "PHP"
+        }
+      ],
+      "tags": [
+        "cli",
+        "allowlist",
+        "subprocess"
+      ],
+      "cwe": [
+        "CWE-78"
+      ],
+      "owasp": [],
+      "extracted_at": "2026-08-10",
+      "extractor": "claude-opus-4-6",
+      "ref": "KB-0017"
+    },
+    {
+      "id": "app-security/command-injection/user-input-passed-as-command-option",
+      "title": "Terminer les options par -- avant toute valeur fournie par l'utilisateur",
+      "category": "app-security",
+      "subcategory": "command-injection",
+      "severity": "high",
+      "confidence": "high",
+      "description": "Meme sans shell, une valeur utilisateur placee sur une ligne de commande doit etre separee des options par le delimiteur `--`, sinon une valeur qui commence par `-` est interpretee comme un drapeau du programme appele.\n",
+      "rationale": "Echapper les metacaracteres ne protege que du shell, pas du programme invoque. Une valeur comme `--output=/etc/cron.d/x` reste un argument parfaitement valide : l'attaquant ne lance pas une seconde commande, il detourne la premiere. C'est l'injection d'argument, et elle survit a `escapeshellarg()` comme a une liste `subprocess`.\n",
+      "remediation": "Inserer `--` entre les options fixes et les valeurs variables (`[\"curl\", \"--\", url]`). Coder en dur le binaire et ses drapeaux ; ne jamais laisser l'utilisateur choisir l'executable.\n",
+      "context": {
+        "languages": [
+          "python",
+          "javascript",
+          "typescript"
+        ],
+        "frameworks": [],
+        "platforms": [],
+        "project_types": [
+          "cli",
+          "pipeline"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "subprocess\\.(run|call|check_output|Popen)\\s*\\(\\s*\\[[^\\]]*(args|argv|sys\\.argv|input|user)",
+          "applies_to": [
+            "**/*.py"
+          ],
+          "note": "valeur utilisateur dans une liste d'arguments — verifier la presence de --"
+        }
+      ],
+      "autofix": "review",
+      "vulnerable_example": {
+        "lang": "python",
+        "code": "subprocess.run([\"curl\", \"-sS\", url])\n# url = \"--output=/etc/cron.d/pwn\" ecrit un fichier au lieu de telecharger\n"
+      },
+      "fixed_example": {
+        "lang": "python",
+        "code": "subprocess.run([\"curl\", \"-sS\", \"--\", url])\n"
+      },
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.md",
+          "doc_sha256": "39c81f1c1518782027ff8c9b1aef2df05e14aabbf1953f398afd52ad635669ea",
+          "quote": "Every OS Command Injection is also an Argument Injection. In this type of attacks, user input can be passed as arguments while executing a specific command.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html",
+          "anchor": "Argument Injection"
+        },
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.md",
+          "doc_sha256": "39c81f1c1518782027ff8c9b1aef2df05e14aabbf1953f398afd52ad635669ea",
+          "quote": "The first -- argument that is not an option-argument should be accepted as a delimiter indicating the end of options. Any following arguments should be treated as operands, even if they begin with the '-' character.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html",
+          "anchor": "Layer 2"
+        }
+      ],
+      "tags": [
+        "cli",
+        "argv",
+        "argument-injection"
+      ],
+      "cwe": [
+        "CWE-88"
+      ],
+      "owasp": [],
+      "extracted_at": "2026-08-10",
+      "extractor": "claude-opus-4-6",
+      "ref": "KB-0019"
+    },
+    {
+      "id": "app-security/file-upload/extension-and-type-not-validated",
+      "title": "Valider extension et type reel d'un fichier televerse, et le renommer",
+      "category": "app-security",
+      "subcategory": "file-upload",
+      "severity": "high",
+      "confidence": "high",
+      "description": "Un fichier televerse doit etre accepte sur liste d'extensions autorisees, voir son type reel controle sans se fier a l'en-tete Content-Type, etre renomme par l'application, et etre stocke hors de la racine web.",
+      "rationale": "L'extension et le Content-Type sont fournis par le client : les deux se falsifient trivialement. Un fichier accepte sur sa seule extension declaree, conserve sous le nom choisi par l'appelant et depose dans un repertoire servi par le serveur web, permet de deposer puis d'invoquer du code. La double extension et l'octet nul contournent en outre les filtres naifs.",
+      "remediation": "Autoriser explicitement les seules extensions utiles au metier, verifier la signature reelle du contenu, generer un nom aleatoire cote application, et servir les fichiers par un gestionnaire qui fait correspondre un identifiant au fichier plutot que d'exposer le chemin.",
+      "context": {
+        "languages": [
+          "python",
+          "typescript"
+        ],
+        "frameworks": [
+          "fastapi",
+          "next",
+          "express"
+        ],
+        "platforms": [],
+        "project_types": [
+          "saas",
+          "api",
+          "ai-rag"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "(?i)\\.(filename|originalname|content_type|mimetype)\\b",
+          "applies_to": [
+            "**/*.py",
+            "**/*.ts",
+            "**/*.js"
+          ],
+          "note": "Metadonnee de televersement fournie par le client. Verifier qu'elle ne sert pas de controle de securite ni de nom de fichier final."
+        },
+        {
+          "kind": "absent",
+          "pattern": "(?i)(ALLOWED_EXTENSIONS|allowed_types|allowlist|uuid4|token_hex|randomUUID|magic|filetype|imghdr)",
+          "applies_to": [
+            "**/upload*/**",
+            "**/*upload*.py",
+            "**/*upload*.ts"
+          ],
+          "note": "Chemin de televersement sans liste d'autorisation ni nom genere."
+        }
+      ],
+      "autofix": "never",
+      "vulnerable_example": {
+        "lang": "python",
+        "code": "chemin = Path(\"static/uploads\") / fichier.filename    # nom choisi par le client\nchemin.write_bytes(await fichier.read())\n",
+        "explanation": "facture.pdf.php depose dans un repertoire servi devient executable ; ../ dans le nom sort du repertoire."
+      },
+      "fixed_example": {
+        "lang": "python",
+        "code": "EXT_AUTORISEES = {\".pdf\", \".docx\"}\n\next = Path(fichier.filename).suffix.lower()\nif ext not in EXT_AUTORISEES:\n    raise HTTPException(415, \"type de fichier non autorise\")\n\ncontenu = await fichier.read()\nif filetype.guess(contenu).mime not in {\"application/pdf\", DOCX_MIME}:\n    raise HTTPException(415, \"le contenu ne correspond pas a l'extension\")\n\n# Nom genere, stockage hors racine web, service par identifiant.\nchemin = STOCKAGE_PRIVE / f\"{uuid4().hex}{ext}\"\nchemin.write_bytes(contenu)\n",
+        "explanation": "Extension sur liste, type reel verifie, nom maitrise, fichier non servi directement."
+      },
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/File_Upload_Cheat_Sheet.md",
+          "doc_sha256": "0f527b1636adb44e305c97657b5cf84c0b5b60895ee5091f4b26baee0e271b6d",
+          "quote": "Validate the file type, don't trust the [Content-Type header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type) as it can be spoofed",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html",
+          "anchor": "Overview"
+        },
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/File_Upload_Cheat_Sheet.md",
+          "doc_sha256": "0f527b1636adb44e305c97657b5cf84c0b5b60895ee5091f4b26baee0e271b6d",
+          "quote": "Double extensions, _e.g._ `.jpg.php`, where it circumvents easily the regex `\\.jpg`",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html",
+          "anchor": "Extension Validation"
+        },
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/File_Upload_Cheat_Sheet.md",
+          "doc_sha256": "0f527b1636adb44e305c97657b5cf84c0b5b60895ee5091f4b26baee0e271b6d",
+          "quote": "creating a **random string** as a filename, such as generating a UUID/GUID, is essential.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html",
+          "anchor": "Filename Sanitization"
+        }
+      ],
+      "tags": [
+        "televersement",
+        "validation",
+        "rce",
+        "stockage"
+      ],
+      "cwe": [
+        "CWE-434"
+      ],
+      "owasp": [
+        "A04:2021"
+      ],
+      "extracted_at": "2026-08-01",
+      "extractor": "claude-opus-5",
+      "ref": "KB-0022"
+    },
+    {
+      "id": "app-security/logging/secrets-written-to-logs",
+      "title": "Exclure secrets et donnees sensibles des journaux",
+      "category": "app-security",
+      "subcategory": "logging",
+      "severity": "high",
+      "confidence": "high",
+      "description": "Les journaux ne doivent contenir ni mot de passe, ni jeton d'acces, ni identifiant de session, ni chaine de connexion, ni cle de chiffrement, ni donnee personnelle sensible : ces valeurs sont retirees, masquees ou hachees avant ecriture.",
+      "rationale": "Un journal circule bien plus largement que la base : il est agrege, expedie vers un service tiers, conserve longtemps et lu par des personnes qui n'ont pas acces a la production. Un secret qui y apparait est donc diffuse au-dela de tout controle, et sa rotation devient obligatoire des qu'on s'en apercoit. Pour un cabinet, la meme logique vaut pour la donnee client.",
+      "remediation": "Poser un filtre de redaction dans la configuration de journalisation plutot que de compter sur la vigilance a chaque appel, ne jamais journaliser un objet de requete entier, et verifier les traces d'exception qui embarquent souvent les parametres.",
+      "context": {
+        "languages": [
+          "python",
+          "typescript"
+        ],
+        "frameworks": [],
+        "platforms": [],
+        "project_types": [
+          "saas",
+          "api",
+          "ai-rag",
+          "pipeline",
+          "cli"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "(?i)(logger|log|console)\\.(debug|info|warn|warning|error)\\s*\\([^)]{0,120}\\b(password|passwd|secret|token|api_key|apikey|authorization|credential|connection_string)\\b",
+          "applies_to": [
+            "**/*.py",
+            "**/*.ts",
+            "**/*.js"
+          ]
+        },
+        {
+          "kind": "grep",
+          "pattern": "(?i)(logger|log|console)\\.(debug|info|warn|warning|error)\\s*\\(\\s*[^)]{0,40}\\b(request|req|payload|body|headers|event)\\s*\\)",
+          "applies_to": [
+            "**/*.py",
+            "**/*.ts",
+            "**/*.js"
+          ],
+          "note": "Objet de requete journalise en entier : en-tete Authorization inclus."
+        }
+      ],
+      "autofix": "review",
+      "vulnerable_example": {
+        "lang": "python",
+        "code": "logger.info(\"connexion\", extra={\"email\": email, \"password\": mot_de_passe})\n",
+        "explanation": "Le mot de passe part vers l'agregateur de journaux et y reste."
+      },
+      "fixed_example": {
+        "lang": "python",
+        "code": "logger.info(\"connexion\", extra={\"email\": email})   # jamais le secret\n\n# Et un filtre pose une fois pour toutes, plutot que la vigilance a chaque appel :\nclass RedactionFilter(logging.Filter):\n    CHAMPS = {\"password\", \"token\", \"authorization\", \"api_key\"}\n\n    def filter(self, record):\n        for champ in self.CHAMPS & set(vars(record)):\n            setattr(record, champ, \"[redige]\")\n        return True\n",
+        "explanation": "La redaction ne depend plus de la relecture de chaque appel a logger."
+      },
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Logging_Cheat_Sheet.md",
+          "doc_sha256": "342a2e9161f004a4aebe217da8476344e1b117f579f6252969e3b9054253eca7",
+          "quote": "The following should usually not be recorded directly in the logs, but instead should be removed, masked, sanitized, hashed, or encrypted:",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html",
+          "anchor": "Data to exclude"
+        },
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Logging_Cheat_Sheet.md",
+          "doc_sha256": "342a2e9161f004a4aebe217da8476344e1b117f579f6252969e3b9054253eca7",
+          "quote": "- Authentication passwords\n- Database connection strings\n- Encryption keys and other primary secrets",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html",
+          "anchor": "Data to exclude"
+        }
+      ],
+      "tags": [
+        "journalisation",
+        "secrets",
+        "pii",
+        "observabilite"
+      ],
+      "cwe": [
+        "CWE-532"
+      ],
+      "owasp": [
+        "A09:2021"
+      ],
+      "extracted_at": "2026-08-01",
+      "extractor": "claude-opus-5",
+      "ref": "KB-0023"
+    },
+    {
+      "id": "app-security/path-traversal/user-controlled-path-not-confined",
+      "title": "Confiner tout chemin de fichier construit a partir d'une entree utilisateur",
+      "category": "app-security",
+      "subcategory": "path-traversal",
+      "severity": "high",
+      "confidence": "high",
+      "description": "Un chemin bati a partir d'un argument ou d'un nom de fichier fourni doit etre resolu en chemin canonique puis verifie comme etant sous un repertoire de base autorise, avant toute lecture ou ecriture.\n",
+      "rationale": "`os.path.join(base, user)` ne confine rien : si `user` est absolu, la base est ecartee ; s'il contient `../`, la resolution sort du repertoire. Un CLI tourne avec les droits de celui qui le lance — souvent son poste de travail entier, parfois root en CI. La resolution canonique est la seule verification qui tienne.\n",
+      "remediation": "Resoudre avec `Path(base).resolve()` et `Path(base, user).resolve()`, puis exiger `resolved.is_relative_to(base)`. Preferer un nom genere en interne au nom fourni par l'utilisateur.\n",
+      "context": {
+        "languages": [
+          "python",
+          "javascript",
+          "typescript"
+        ],
+        "frameworks": [],
+        "platforms": [],
+        "project_types": [
+          "cli",
+          "pipeline",
+          "saas",
+          "api"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "os\\.path\\.join\\s*\\([^)]*(args\\.|sys\\.argv|input\\(|request\\.)",
+          "applies_to": [
+            "**/*.py"
+          ],
+          "note": "chemin compose avec une entree, sans resolution canonique"
+        },
+        {
+          "kind": "grep",
+          "pattern": "open\\s*\\(\\s*(args\\.|sys\\.argv)",
+          "applies_to": [
+            "**/*.py"
+          ],
+          "note": "ouverture directe d'un chemin fourni"
+        }
+      ],
+      "autofix": "review",
+      "vulnerable_example": {
+        "lang": "python",
+        "code": "dest = os.path.join(OUTPUT_DIR, args.name)\nopen(dest, \"w\").write(data)   # args.name = \"../../.ssh/authorized_keys\"\n"
+      },
+      "fixed_example": {
+        "lang": "python",
+        "code": "base = Path(OUTPUT_DIR).resolve()\ndest = (base / args.name).resolve()\nif not dest.is_relative_to(base):\n    raise SystemExit(\"chemin hors du repertoire autorise\")\ndest.write_text(data)\n"
+      },
+      "evidence": [
+        {
+          "source_id": "owasp-asvs",
+          "doc_path": "owasp-asvs/5.0/en/0x14-V5-File-Handling.md",
+          "doc_sha256": "079a51123e5156a5ffc6329f266d49752cb60f6b780899484c3f1cfde3734ebb",
+          "quote": "Verify that when the application creates file paths for file operations, instead of user-submitted filenames, it uses internally generated or trusted data, or if user-submitted filenames or file metadata must be used, strict validation and sanitization must be applied.",
+          "url": "https://github.com/OWASP/ASVS/blob/master/5.0/en/0x14-V5-File-Handling.md",
+          "anchor": "V5.3 File Storage"
+        },
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Input_Validation_Cheat_Sheet.md",
+          "doc_sha256": "474509f8bc6d06dab110bad0d0d5055cc9c6f2a63d2f464ce2966be634246772",
+          "quote": "The client should not be able to specify the file path; it should be defined by the server.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html",
+          "anchor": "File Upload Validation"
+        }
+      ],
+      "tags": [
+        "cli",
+        "path-traversal",
+        "filesystem"
+      ],
+      "cwe": [
+        "CWE-22"
+      ],
+      "owasp": [],
+      "extracted_at": "2026-08-10",
+      "extractor": "claude-opus-4-6",
+      "ref": "KB-0024"
+    },
+    {
+      "id": "app-security/secrets/secret-passed-as-command-line-argument",
+      "title": "Ne jamais recevoir un secret par argument de ligne de commande",
+      "category": "app-security",
+      "subcategory": "secrets",
+      "severity": "high",
+      "confidence": "medium",
+      "description": "Un CLI ne doit pas accepter cle d'API, mot de passe ou jeton via une option de ligne de commande. Il les lit depuis un fichier a permissions restreintes, l'entree standard, ou un gestionnaire de secrets.\n",
+      "rationale": "Les arguments d'un process sont lisibles par tout utilisateur de la machine (`ps aux`, `/proc/<pid>/cmdline`), et le shell les archive en clair dans son historique. Les variables d'environnement sont a peine meilleures : OWASP note qu'elles sont generalement accessibles a tous les process et peuvent se retrouver dans les journaux ou un vidage systeme.\n",
+      "remediation": "Proposer `--token-file` plutot que `--token`, lire sur stdin quand le terminal est interactif, ou deleguer a un gestionnaire de secrets. Si une variable d'environnement reste le seul choix, le documenter comme un repli.\n",
+      "context": {
+        "languages": [
+          "python",
+          "javascript",
+          "typescript"
+        ],
+        "frameworks": [],
+        "platforms": [],
+        "project_types": [
+          "cli",
+          "pipeline"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "add_argument\\s*\\(\\s*[\"']--(token|password|secret|api-key|apikey|passwd)",
+          "applies_to": [
+            "**/*.py"
+          ],
+          "note": "argparse expose un secret en clair sur la ligne de commande"
+        },
+        {
+          "kind": "grep",
+          "pattern": "\\.option\\s*\\(\\s*[\"']--(token|password|secret|api-key)",
+          "applies_to": [
+            "**/*.js",
+            "**/*.ts",
+            "**/*.py"
+          ],
+          "note": "click/commander exposent un secret en option"
+        }
+      ],
+      "autofix": "review",
+      "vulnerable_example": {
+        "lang": "python",
+        "code": "parser.add_argument(\"--api-key\", required=True)\n# visible dans `ps aux` et dans ~/.bash_history\n"
+      },
+      "fixed_example": {
+        "lang": "python",
+        "code": "parser.add_argument(\"--api-key-file\", type=Path)\nkey = args.api_key_file.read_text().strip() if args.api_key_file else os.environ.get(\"API_KEY\")\n"
+      },
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Secrets_Management_Cheat_Sheet.md",
+          "doc_sha256": "098b2e35ca5b9846bb35cb80fa9eef59aa97d76e10a12a5ff25b121f2c5770bd",
+          "quote": "Additionally, environment variables are generally accessible to all processes and may be included in logs or system dumps. Using environment variables is therefore not recommended unless the other methods are not possible.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
+          "anchor": "5.1 Injection of Secrets (file, in-memory)"
+        }
+      ],
+      "tags": [
+        "cli",
+        "secrets",
+        "argv"
+      ],
+      "cwe": [
+        "CWE-214"
+      ],
+      "owasp": [],
+      "extracted_at": "2026-08-10",
+      "extractor": "claude-opus-4-6",
+      "ref": "KB-0025"
+    },
+    {
+      "id": "app-security/error-handling/stack-trace-returned-to-client",
+      "title": "Renvoyer une reponse d'erreur generique et journaliser le detail cote serveur",
+      "category": "app-security",
+      "subcategory": "error-handling",
+      "severity": "medium",
+      "confidence": "high",
+      "description": "Une erreur inattendue doit produire une reponse generique pour l'appelant, tandis que la trace complete est journalisee cote serveur. Aucun message d'exception, chemin de fichier, requete SQL ni version de composant ne doit figurer dans la reponse.",
+      "rationale": "Une trace d'exception renseigne l'attaquant sur la pile, l'arborescence, le schema de base et les points ou l'entree n'est pas geree : elle transforme une erreur en cartographie gratuite du systeme. La meme information est utile a l'equipe, mais dans les journaux, ou son acces est controle.",
+      "remediation": "Installer un gestionnaire d'erreurs global qui retourne un corps neutre avec un identifiant de correlation, et journaliser l'exception complete avec ce meme identifiant. Verifier que le mode debug est desactive en production.",
+      "context": {
+        "languages": [
+          "python",
+          "typescript"
+        ],
+        "frameworks": [
+          "fastapi",
+          "next",
+          "express"
+        ],
+        "platforms": [],
+        "project_types": [
+          "saas",
+          "api",
+          "ai-rag",
+          "static-site"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "(?i)(debug\\s*=\\s*True|DEBUG\\s*[:=]\\s*(true|1)\\b)",
+          "applies_to": [
+            "**/*.py",
+            "**/*.ts",
+            "**/*.env*",
+            "**/settings*.py",
+            "**/config*.py"
+          ],
+          "note": "Mode debug actif : les traces partent au client."
+        },
+        {
+          "kind": "grep",
+          "pattern": "(?i)(JSONResponse|jsonify|res\\.(json|send)|HTTPException)\\s*\\([^)]{0,120}(str\\s*\\(\\s*e\\s*\\)|traceback\\.|\\.stack\\b|repr\\s*\\(\\s*e)",
+          "applies_to": [
+            "**/*.py",
+            "**/*.ts",
+            "**/*.js"
+          ],
+          "note": "Detail d'exception renvoye dans la reponse."
+        }
+      ],
+      "autofix": "review",
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Error_Handling_Cheat_Sheet.md",
+          "doc_sha256": "97a57eb94a0355cf7e74646c1026ad60296e75eb076fe9fc365db4884d5f3691",
+          "quote": "when an unexpected error occurs then a generic response is returned by the application but the error details are logged server side for investigation, and not returned to the user.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html",
+          "anchor": "Objective"
+        },
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Error_Handling_Cheat_Sheet.md",
+          "doc_sha256": "97a57eb94a0355cf7e74646c1026ad60296e75eb076fe9fc365db4884d5f3691",
+          "quote": "Using error messages that do not provide implementation details is important to avoid information leakage.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html",
+          "anchor": "HTTP return codes"
+        }
+      ],
+      "tags": [
+        "fuite-d-information",
+        "erreurs",
+        "journalisation"
+      ],
+      "cwe": [
+        "CWE-209"
+      ],
+      "owasp": [
+        "A05:2021"
+      ],
+      "extracted_at": "2026-08-01",
+      "extractor": "claude-opus-5",
+      "ref": "KB-0021"
+    }
+  ]
+}

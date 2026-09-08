@@ -1,0 +1,192 @@
+{
+  "category": "authorization",
+  "generated_at": "2026-09-08T09:24:06+00:00",
+  "count": 2,
+  "rules": [
+    {
+      "id": "authorization/multi-tenant/tenant-id-taken-from-request",
+      "title": "Deriver le locataire de la session authentifiee, jamais de la requete",
+      "category": "authorization",
+      "subcategory": "multi-tenant",
+      "severity": "critical",
+      "confidence": "high",
+      "description": "L'identifiant de locataire qui sert a filtrer les donnees doit etre lu dans la session ou le jeton verifie, jamais dans un en-tete, un parametre de requete ou un champ du corps fourni par le client.",
+      "rationale": "Un identifiant de locataire transmis par le client est une valeur que le client controle : le modifier suffit a basculer tout le filtrage vers un autre cabinet. Le controle d'acces devient alors declaratif, exactement comme si on demandait poliment a l'appelant de ne pas tricher. Le seul identifiant opposable est celui qui a ete etabli a l'authentification et signe.",
+      "remediation": "Etablir le contexte de locataire tot dans le cycle de requete, a partir de la session, et l'injecter dans la couche d'acces aux donnees. Si un en-tete de locataire existe pour des raisons de routage, verifier qu'il correspond a celui de la session et refuser sinon.",
+      "context": {
+        "languages": [
+          "python",
+          "typescript"
+        ],
+        "frameworks": [
+          "fastapi",
+          "next",
+          "express"
+        ],
+        "platforms": [
+          "supabase",
+          "postgresql"
+        ],
+        "project_types": [
+          "saas",
+          "api",
+          "ai-rag"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "(?i)(headers|query_params|args|params|body|cookies)[\\.\\[]\\s*[\"']?[xX]?-?(tenant|org|organisation|organization|account|workspace)[_-]?id",
+          "applies_to": [
+            "**/*.py",
+            "**/*.ts",
+            "**/*.js"
+          ],
+          "note": "Identifiant de locataire lu depuis une entree client."
+        }
+      ],
+      "autofix": "never",
+      "vulnerable_example": {
+        "lang": "python",
+        "code": "def get_tenant_data(request):\n    tenant_id = request.headers.get(\"X-Tenant-ID\")   # controle par l'appelant\n    return db.execute(\"select * from data where tenant_id = :t\", {\"t\": tenant_id})\n",
+        "explanation": "Changer un en-tete donne acces aux donnees de n'importe quel locataire."
+      },
+      "fixed_example": {
+        "lang": "python",
+        "code": "def get_tenant_data(request, user: User = Depends(current_user)):\n    # Le locataire vient du jeton verifie, pas de la requete.\n    return db.execute(\n        \"select * from data where tenant_id = :t\",\n        {\"t\": user.tenant_id},\n    )\n",
+        "explanation": "L'appelant ne peut plus choisir son perimetre : il est fixe a l'authentification."
+      },
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Multi_Tenant_Security_Cheat_Sheet.md",
+          "doc_sha256": "8faca80517276ada9574c0f92b714e949d5ae5ea0f180ce2f92dd86c69df548b",
+          "quote": "Establish tenant context early in the request lifecycle (middleware/interceptor).\n- Use cryptographically secure, non-guessable tenant identifiers.\n- Never trust client-supplied tenant IDs without validation.\n- Bind tenant context to the authenticated user session.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Multi_Tenant_Security_Cheat_Sheet.html",
+          "anchor": "Tenant Identification & Context Management"
+        },
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Multi_Tenant_Security_Cheat_Sheet.md",
+          "doc_sha256": "8faca80517276ada9574c0f92b714e949d5ae5ea0f180ce2f92dd86c69df548b",
+          "quote": "# Dangerous: Tenant ID from request header without validation/query parameterization",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Multi_Tenant_Security_Cheat_Sheet.html",
+          "anchor": "Bad example / Trusting client-supplied tenant ID"
+        }
+      ],
+      "tags": [
+        "multi-tenant",
+        "autorisation",
+        "isolation",
+        "saas"
+      ],
+      "cwe": [
+        "CWE-639",
+        "CWE-284"
+      ],
+      "owasp": [
+        "A01:2021"
+      ],
+      "extracted_at": "2026-08-01",
+      "extractor": "claude-opus-5",
+      "ref": "KB-0031"
+    },
+    {
+      "id": "authorization/object-level/missing-ownership-check-on-id",
+      "title": "Verifier la propriete de l'objet a chaque acces par identifiant",
+      "category": "authorization",
+      "subcategory": "object-level",
+      "severity": "critical",
+      "confidence": "high",
+      "description": "Toute route qui recoit un identifiant d'objet doit verifier, cote serveur, que l'utilisateur authentifie a le droit d'acceder a cet objet precis, avant de le lire ou de le modifier.",
+      "rationale": "Etre authentifie ne dit rien sur ce a quoi on a droit. Sans controle au niveau de l'objet, changer un chiffre dans l'URL suffit a lire le dossier d'un autre client : l'attaque ne demande aucun outil et laisse des traces indistinguables d'un usage normal. Un identifiant difficile a deviner ne remplace pas le controle : une URL partagee ou un journal fuite suffit a l'obtenir.",
+      "remediation": "Charger l'objet avec un predicat de propriete dans la requete meme, plutot que de le charger puis de comparer. Sur Postgres, doubler d'une policy Row Level Security pour que l'oubli d'un filtre ne suffise pas a ouvrir l'acces.",
+      "context": {
+        "languages": [
+          "python",
+          "typescript"
+        ],
+        "frameworks": [
+          "fastapi",
+          "next",
+          "express"
+        ],
+        "platforms": [
+          "supabase",
+          "postgresql"
+        ],
+        "project_types": [
+          "saas",
+          "api",
+          "ai-rag"
+        ]
+      },
+      "detection": [
+        {
+          "kind": "grep",
+          "pattern": "(?i)\\{\\s*(id|uuid|\\w+_id)\\s*(:[^}]*)?\\}",
+          "applies_to": [
+            "**/routers/**/*.py",
+            "**/api/**/*.py",
+            "**/app/api/**/route.ts"
+          ],
+          "note": "Route parametree par un identifiant. Verifier qu'un filtre de propriete accompagne le chargement."
+        },
+        {
+          "kind": "grep",
+          "pattern": "(?i)\\.(get|filter_by|find_one|findUnique|findFirst)\\s*\\(\\s*(id\\s*=|\\{\\s*id\\s*:)",
+          "applies_to": [
+            "**/*.py",
+            "**/*.ts"
+          ],
+          "note": "Chargement par identifiant seul, sans predicat d'appartenance."
+        }
+      ],
+      "autofix": "never",
+      "vulnerable_example": {
+        "lang": "python",
+        "code": "@router.get(\"/dossiers/{dossier_id}\")\nasync def lire(dossier_id: str, user: User = Depends(current_user)):\n    return await Dossier.get(id=dossier_id)      # aucun lien avec user\n",
+        "explanation": "Incrementer dossier_id donne acces aux dossiers des autres cabinets."
+      },
+      "fixed_example": {
+        "lang": "python",
+        "code": "@router.get(\"/dossiers/{dossier_id}\")\nasync def lire(dossier_id: str, user: User = Depends(current_user)):\n    dossier = await Dossier.get(id=dossier_id, org_id=user.org_id)\n    if dossier is None:\n        raise HTTPException(404)     # 404, pas 403 : ne pas confirmer l'existence\n    return dossier\n",
+        "explanation": "Le predicat d'appartenance est dans la requete ; la reponse ne revele pas l'existence d'un objet inaccessible."
+      },
+      "evidence": [
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet.md",
+          "doc_sha256": "0a0056b89acc452b4e4fece79511387406480e912f4fce8247b1381446fc4bda",
+          "quote": "A missing object-level authorization check that allows a user to access or manipulate an object they should not be able to access.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet.html",
+          "anchor": "Introduction"
+        },
+        {
+          "source_id": "owasp-cheatsheets",
+          "doc_path": "owasp-cheatsheets/cheatsheets/Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet.md",
+          "doc_sha256": "0a0056b89acc452b4e4fece79511387406480e912f4fce8247b1381446fc4bda",
+          "quote": "However, even with complex identifiers, access control checks are essential. If attackers obtain URLs for unauthorized objects, the application should still block their access attempts.",
+          "url": "https://cheatsheetseries.owasp.org/cheatsheets/Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet.html",
+          "anchor": "Identifier complexity"
+        }
+      ],
+      "tags": [
+        "idor",
+        "autorisation",
+        "multi-tenant",
+        "api"
+      ],
+      "cwe": [
+        "CWE-639"
+      ],
+      "owasp": [
+        "A01:2021",
+        "API1:2023"
+      ],
+      "extracted_at": "2026-08-01",
+      "extractor": "claude-opus-5",
+      "ref": "KB-0032"
+    }
+  ]
+}
