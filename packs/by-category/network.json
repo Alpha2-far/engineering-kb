@@ -1,6 +1,6 @@
 {
   "category": "network",
-  "generated_at": "2026-09-08T09:30:25+00:00",
+  "generated_at": "2026-09-08T10:00:24+00:00",
   "count": 1,
   "rules": [
     {
@@ -57,6 +57,7 @@
         "code": "HOTES_AUTORISES = {\"api.partenaire.com\", \"cdn.partenaire.com\"}\n\n@router.post(\"/importer\")\nasync def importer(url: str):\n    hote = urlparse(url).hostname\n    if hote not in HOTES_AUTORISES:          # liste d'autorisation, pas d'interdiction\n        raise HTTPException(400, \"hote non autorise\")\n    async with httpx.AsyncClient(follow_redirects=False) as c:\n        return (await c.get(url)).text\n",
         "explanation": "Seuls des hotes connus sont joignables, et une redirection ne peut pas deplacer la cible."
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",

@@ -1,6 +1,6 @@
 {
   "category": "authentication",
-  "generated_at": "2026-09-08T09:30:25+00:00",
+  "generated_at": "2026-09-08T10:00:24+00:00",
   "count": 5,
   "rules": [
     {
@@ -70,6 +70,7 @@
         "code": "payload = jwt.decode(\n    token,\n    SECRET,\n    algorithms=[\"HS256\"],          # impose par le code\n    audience=SETTINGS.audience,\n    issuer=SETTINGS.issuer,\n)\n",
         "explanation": "Tout jeton annoncant un autre algorithme est rejete avant lecture des claims."
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
@@ -167,6 +168,7 @@
         "code": "from argon2 import PasswordHasher\n\nph = PasswordHasher(memory_cost=19456, time_cost=2, parallelism=1)\ndb.save(User(email=email, password_hash=ph.hash(mot_de_passe)))\n",
         "explanation": "Sel genere par la bibliotheque, cout memoire impose a chaque essai."
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
@@ -259,6 +261,7 @@
         "code": "SECRET = os.environ[\"JWT_SECRET\"]       # KeyError au demarrage si absent\nif len(SECRET) < 64:\n    raise RuntimeError(\"JWT_SECRET doit faire au moins 64 caracteres\")\n",
         "explanation": "L'application refuse de demarrer mal configuree, au lieu de demarrer vulnerable."
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
@@ -342,6 +345,7 @@
         }
       ],
       "autofix": "review",
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "fastapi",
@@ -437,6 +441,7 @@
         "code": "import secrets\n\nutilisateur_ok = secrets.compare_digest(\n    credentials.username.encode(\"utf8\"), b\"stanleyjobson\"\n)\nmot_de_passe_ok = secrets.compare_digest(\n    credentials.password.encode(\"utf8\"), b\"swordfish\"\n)\nif not (utilisateur_ok and mot_de_passe_ok):\n    raise HTTPException(status_code=401, detail=\"Identifiants incorrects\")\n",
         "explanation": "La duree de comparaison ne depend plus du contenu : le canal auxiliaire disparait."
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "fastapi",

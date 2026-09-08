@@ -1,6 +1,6 @@
 {
   "category": "data-protection",
-  "generated_at": "2026-09-08T09:30:25+00:00",
+  "generated_at": "2026-09-08T10:00:24+00:00",
   "count": 1,
   "rules": [
     {
@@ -51,6 +51,7 @@
         "code": "texte, correspondances = redacteur.pseudonymiser(document.texte_integral)\n# texte contient desormais [PERSONNE_1], [ADRESSE_1], [DOSSIER_1]\n\nresp = client.messages.create(\n    model=MODEL,\n    messages=[{\"role\": \"user\", \"content\": texte}],\n)\nreponse = redacteur.retablir(resp.content, correspondances)\n",
         "explanation": "Le fournisseur voit la structure du dossier, pas l'identite des parties ; la table de correspondance ne quitte jamais l'application."
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-llm-top10",

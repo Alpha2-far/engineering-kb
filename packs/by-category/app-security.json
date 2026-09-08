@@ -1,6 +1,6 @@
 {
   "category": "app-security",
-  "generated_at": "2026-09-08T09:30:25+00:00",
+  "generated_at": "2026-09-08T10:00:24+00:00",
   "count": 9,
   "rules": [
     {
@@ -65,6 +65,7 @@
         "lang": "python",
         "code": "subprocess.run([\"git\", \"clone\", \"--\", args.repo], shell=False, check=True)\n"
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
@@ -150,6 +151,7 @@
         "lang": "python",
         "code": "state = json.loads(Path(CACHE_PATH).read_text())\nconfig = yaml.safe_load(Path(\"config.yaml\").read_text())\n"
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
@@ -224,6 +226,7 @@
         "lang": "python",
         "code": "TOOLS = {\"git\": \"/usr/bin/git\", \"docker\": \"/usr/bin/docker\"}\nif args.tool not in TOOLS:\n    raise SystemExit(f\"outil non autorise : {args.tool}\")\nsubprocess.run([TOOLS[args.tool], \"--version\"])\n"
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
@@ -297,6 +300,7 @@
         "lang": "python",
         "code": "subprocess.run([\"curl\", \"-sS\", \"--\", url])\n"
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
@@ -388,6 +392,7 @@
         "code": "EXT_AUTORISEES = {\".pdf\", \".docx\"}\n\next = Path(fichier.filename).suffix.lower()\nif ext not in EXT_AUTORISEES:\n    raise HTTPException(415, \"type de fichier non autorise\")\n\ncontenu = await fichier.read()\nif filetype.guess(contenu).mime not in {\"application/pdf\", DOCX_MIME}:\n    raise HTTPException(415, \"le contenu ne correspond pas a l'extension\")\n\n# Nom genere, stockage hors racine web, service par identifiant.\nchemin = STOCKAGE_PRIVE / f\"{uuid4().hex}{ext}\"\nchemin.write_bytes(contenu)\n",
         "explanation": "Extension sur liste, type reel verifie, nom maitrise, fichier non servi directement."
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
@@ -487,6 +492,7 @@
         "code": "logger.info(\"connexion\", extra={\"email\": email})   # jamais le secret\n\n# Et un filtre pose une fois pour toutes, plutot que la vigilance a chaque appel :\nclass RedactionFilter(logging.Filter):\n    CHAMPS = {\"password\", \"token\", \"authorization\", \"api_key\"}\n\n    def filter(self, record):\n        for champ in self.CHAMPS & set(vars(record)):\n            setattr(record, champ, \"[redige]\")\n        return True\n",
         "explanation": "La redaction ne depend plus de la relecture de chaque appel a logger."
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
@@ -573,6 +579,7 @@
         "lang": "python",
         "code": "base = Path(OUTPUT_DIR).resolve()\ndest = (base / args.name).resolve()\nif not dest.is_relative_to(base):\n    raise SystemExit(\"chemin hors du repertoire autorise\")\ndest.write_text(data)\n"
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-asvs",
@@ -656,6 +663,7 @@
         "lang": "python",
         "code": "parser.add_argument(\"--api-key-file\", type=Path)\nkey = args.api_key_file.read_text().strip() if args.api_key_file else os.environ.get(\"API_KEY\")\n"
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
@@ -732,6 +740,7 @@
         }
       ],
       "autofix": "review",
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",

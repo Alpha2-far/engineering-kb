@@ -1,6 +1,6 @@
 {
   "category": "database",
-  "generated_at": "2026-09-08T09:30:25+00:00",
+  "generated_at": "2026-09-08T10:00:24+00:00",
   "count": 6,
   "rules": [
     {
@@ -70,6 +70,7 @@
         "code": "// Cote navigateur : cle publique, bornee par RLS.\nconst supabase = createClient(url, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)\n\n// Cote serveur uniquement, sans prefixe d'exposition, pour l'administratif.\nconst admin = createClient(url, process.env.SUPABASE_SERVICE_ROLE_KEY!)\n",
         "explanation": "Le navigateur ne detient qu'une cle dont les politiques RLS bornent la portee."
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "supabase",
@@ -164,6 +165,7 @@
         "code": "create table public.dossiers (\n  id uuid primary key default gen_random_uuid(),\n  cabinet_id uuid not null,\n  contenu text\n);\n\nalter table public.dossiers enable row level security;\n\ncreate policy \"lecture limitee au cabinet\"\n  on public.dossiers\n  for select\n  to authenticated\n  using ( cabinet_id = (select auth.jwt() ->> 'cabinet_id')::uuid );\n",
         "explanation": "La base elle-meme refuse les lignes hors perimetre, quel que soit le code appelant."
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "supabase",
@@ -273,6 +275,7 @@
         "code": "nom = request.query_params[\"client\"]\nrows = session.execute(\n    text(\"select * from dossiers where client = :client\"),\n    {\"client\": nom},\n)\n",
         "explanation": "Le SQL est fige avant que la valeur n'arrive ; elle ne peut plus en changer le sens."
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
@@ -364,6 +367,7 @@
         "code": "create function private.a_le_role(role_attendu text)\nreturns boolean\nlanguage plpgsql\nsecurity definer set search_path = ''    -- schema prive, chemin fixe\nas $$\nbegin\n  return exists (\n    select 1 from public.roles_table\n    where user_id = (select auth.uid()) and role = role_attendu\n  );\nend;\n$$;\n",
         "explanation": "La fonction n'est plus joignable par l'API et ne sert que depuis les politiques."
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "supabase",
@@ -448,6 +452,7 @@
         "code": "create view public.dossiers_resume\nwith (security_invoker = true)\nas select id, cabinet_id, titre from public.dossiers;\n",
         "explanation": "La vue s'execute avec les droits de l'appelant : les politiques de la table s'appliquent de nouveau."
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "supabase",
@@ -521,6 +526,7 @@
         }
       ],
       "autofix": "never",
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "supabase",

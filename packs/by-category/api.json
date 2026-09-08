@@ -1,6 +1,6 @@
 {
   "category": "api",
-  "generated_at": "2026-09-08T09:30:25+00:00",
+  "generated_at": "2026-09-08T10:00:24+00:00",
   "count": 1,
   "rules": [
     {
@@ -71,6 +71,7 @@
         "code": "class UserCreate(BaseModel):\n    model_config = ConfigDict(extra=\"forbid\")   # champ inconnu = 422\n    email: EmailStr\n    nom: str\n    # is_admin n'est pas exposé : il n'est pas ecrivable par le client.\n\n@router.post(\"/users\")\nasync def creer(payload: UserCreate):\n    return await User.create(email=payload.email, nom=payload.nom)\n",
         "explanation": "La surface ecrivable est declaree, et tout champ hors liste est rejete."
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",

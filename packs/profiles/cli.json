@@ -1,6 +1,6 @@
 {
   "profile": "cli",
-  "generated_at": "2026-09-08T09:30:25+00:00",
+  "generated_at": "2026-09-08T10:00:24+00:00",
   "count": 16,
   "rules": [
     {
@@ -59,6 +59,7 @@
         "code": "OPERATIONS = {\"somme\": somme, \"moyenne\": moyenne, \"ecart_type\": ecart_type}\n\nchoice = llm.complete(prompt, response_format=OperationChoice)  # sortie structuree\nif choice.name not in OPERATIONS:\n    raise ValueError(f\"operation non autorisee : {choice.name}\")\nresult = OPERATIONS[choice.name](*choice.args)\n",
         "explanation": "Le modele choisit dans un ensemble ferme ; il n'ecrit pas ce qui s'execute."
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-llm-top10",
@@ -155,6 +156,7 @@
         "lang": "python",
         "code": "subprocess.run([\"git\", \"clone\", \"--\", args.repo], shell=False, check=True)\n"
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
@@ -240,6 +242,7 @@
         "lang": "python",
         "code": "state = json.loads(Path(CACHE_PATH).read_text())\nconfig = yaml.safe_load(Path(\"config.yaml\").read_text())\n"
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
@@ -345,6 +348,7 @@
         "code": "nom = request.query_params[\"client\"]\nrows = session.execute(\n    text(\"select * from dossiers where client = :client\"),\n    {\"client\": nom},\n)\n",
         "explanation": "Le SQL est fige avant que la valeur n'arrive ; elle ne peut plus en changer le sens."
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
@@ -434,6 +438,7 @@
         "code": "- name: Verifier le titre\n  env:\n    PR_TITLE: ${{ github.event.pull_request.title }}\n  run: |\n    echo \"Titre : $PR_TITLE\"     # valeur, jamais interpolee dans le script\n",
         "explanation": "Le shell recoit une variable ; son contenu n'est plus analyse comme du code."
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
@@ -539,6 +544,7 @@
         "code": "SUPABASE_SERVICE_KEY = os.environ[\"SUPABASE_SERVICE_KEY\"]   # absent = echec au demarrage\n",
         "explanation": "Le secret vit dans la configuration de la plateforme ; le depot ne contient que son nom."
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
@@ -616,6 +622,7 @@
         "lang": "python",
         "code": "TOOLS = {\"git\": \"/usr/bin/git\", \"docker\": \"/usr/bin/docker\"}\nif args.tool not in TOOLS:\n    raise SystemExit(f\"outil non autorise : {args.tool}\")\nsubprocess.run([TOOLS[args.tool], \"--version\"])\n"
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
@@ -689,6 +696,7 @@
         "lang": "python",
         "code": "subprocess.run([\"curl\", \"-sS\", \"--\", url])\n"
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
@@ -777,6 +785,7 @@
         "code": "logger.info(\"connexion\", extra={\"email\": email})   # jamais le secret\n\n# Et un filtre pose une fois pour toutes, plutot que la vigilance a chaque appel :\nclass RedactionFilter(logging.Filter):\n    CHAMPS = {\"password\", \"token\", \"authorization\", \"api_key\"}\n\n    def filter(self, record):\n        for champ in self.CHAMPS & set(vars(record)):\n            setattr(record, champ, \"[redige]\")\n        return True\n",
         "explanation": "La redaction ne depend plus de la relecture de chaque appel a logger."
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
@@ -863,6 +872,7 @@
         "lang": "python",
         "code": "base = Path(OUTPUT_DIR).resolve()\ndest = (base / args.name).resolve()\nif not dest.is_relative_to(base):\n    raise SystemExit(\"chemin hors du repertoire autorise\")\ndest.write_text(data)\n"
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-asvs",
@@ -946,6 +956,7 @@
         "lang": "python",
         "code": "parser.add_argument(\"--api-key-file\", type=Path)\nkey = args.api_key_file.read_text().strip() if args.api_key_file else os.environ.get(\"API_KEY\")\n"
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
@@ -1017,6 +1028,7 @@
         "code": "steps:\n  - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0\n    with:\n      persist-credentials: false\n",
         "explanation": "Le commit execute est fige ; la mise a jour devient un changement visible en revue."
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
@@ -1098,6 +1110,7 @@
         }
       ],
       "autofix": "review",
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-llm-top10",
@@ -1170,6 +1183,7 @@
         }
       ],
       "autofix": "review",
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
@@ -1252,6 +1266,7 @@
         }
       ],
       "autofix": "never",
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
@@ -1323,6 +1338,7 @@
         }
       ],
       "autofix": "review",
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",

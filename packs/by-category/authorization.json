@@ -1,6 +1,6 @@
 {
   "category": "authorization",
-  "generated_at": "2026-09-08T09:30:25+00:00",
+  "generated_at": "2026-09-08T10:00:24+00:00",
   "count": 2,
   "rules": [
     {
@@ -56,6 +56,7 @@
         "code": "def get_tenant_data(request, user: User = Depends(current_user)):\n    # Le locataire vient du jeton verifie, pas de la requete.\n    return db.execute(\n        \"select * from data where tenant_id = :t\",\n        {\"t\": user.tenant_id},\n    )\n",
         "explanation": "L'appelant ne peut plus choisir son perimetre : il est fixe a l'authentification."
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
@@ -153,6 +154,7 @@
         "code": "@router.get(\"/dossiers/{dossier_id}\")\nasync def lire(dossier_id: str, user: User = Depends(current_user)):\n    dossier = await Dossier.get(id=dossier_id, org_id=user.org_id)\n    if dossier is None:\n        raise HTTPException(404)     # 404, pas 403 : ne pas confirmer l'existence\n    return dossier\n",
         "explanation": "Le predicat d'appartenance est dans la requete ; la reponse ne revele pas l'existence d'un objet inaccessible."
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",

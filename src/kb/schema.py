@@ -240,6 +240,19 @@ class Rule(BaseModel):
     vulnerable_example: CodeExample | None = None
     fixed_example: CodeExample | None = None
 
+    do_pattern: str | None = Field(
+        default=None,
+        description="Snippet de code sécurisé recommandé (si omis, dérivé de fixed_example)",
+    )
+    dont_pattern: str | None = Field(
+        default=None,
+        description="Snippet de code vulnérable fréquent (si omis, dérivé de vulnerable_example)",
+    )
+    frameworks: list[str] = Field(
+        default_factory=list,
+        description="Frameworks et libs cibles (ex. fastapi, supabase, nextjs, docker, jwt, pgvector)",
+    )
+
     evidence: list[Evidence] = Field(min_length=1)
     tags: list[str] = Field(default_factory=list)
 
@@ -248,6 +261,45 @@ class Rule(BaseModel):
 
     extracted_at: str = Field(description="Date ISO de l'extraction")
     extractor: str = Field(description="Qui a extrait (modele/agent), pour la tracabilite")
+
+    @property
+    def effective_do_pattern(self) -> str | None:
+        """Extrait de code sécurisé de référence."""
+        if self.do_pattern:
+            return self.do_pattern
+        return self.fixed_example.code if self.fixed_example else None
+
+    @property
+    def effective_dont_pattern(self) -> str | None:
+        """Extrait de code vulnérable représentatif du piège LLM."""
+        if self.dont_pattern:
+            return self.dont_pattern
+        return self.vulnerable_example.code if self.vulnerable_example else None
+
+    @property
+    def all_frameworks(self) -> list[str]:
+        """Agrège les frameworks déclarés au niveau racine et dans context."""
+        fw = set(self.frameworks)
+        if self.context:
+            fw.update(self.context.frameworks)
+        return sorted(fw)
+
+    def to_agent_card(self) -> dict:
+        """Vue condensée taillée pour être injectée dans la fenêtre de contexte d'un agent."""
+        return {
+            "id": self.id,
+            "title": self.title,
+            "severity": self.severity.value,
+            "category": self.category.value,
+            "frameworks": self.all_frameworks,
+            "rationale": self.rationale.strip(),
+            "remediation": self.remediation.strip(),
+            "do_pattern": self.effective_do_pattern,
+            "dont_pattern": self.effective_dont_pattern,
+            "official_citation": self.evidence[0].quote if self.evidence else None,
+            "source_id": self.evidence[0].source_id if self.evidence else None,
+        }
+
 
     @field_validator("id")
     @classmethod
@@ -319,3 +371,17 @@ class RulePack(BaseModel):
 
     source_id: str
     rules: list[Rule]
+
+
+class SecurityTopic(BaseModel):
+    """Index de résolution sémantique associant des intentions d'agents à des règles."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    slug: str = Field(description="Identifiant unique du topic, ex. fastapi-jwt")
+    title: str = Field(description="Nom lisible du topic")
+    keywords: list[str] = Field(default_factory=list, description="Mots-clés naturels")
+    frameworks: list[str] = Field(default_factory=list, description="Frameworks concernés")
+    rule_ids: list[str] = Field(default_factory=list, description="IDs de règles associées")
+    description: str = Field(default="", description="Courte explication du risque")
+

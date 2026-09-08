@@ -504,6 +504,61 @@ def fetch_page(
     console.print(f"[dim]credits restants : {c.get('remainingCredits')}[/dim]")
 
 
+@app.command()
+def search(
+    query: str = typer.Argument(..., help="Intention technique, framework ou mot-clé (ex: 'JWT auth FastAPI')"),
+    limit: int = typer.Option(5, "--limit", "-n", help="Nombre maximum de règles à renvoyer"),
+    framework: str = typer.Option("", "--framework", "-f", help="Filtrer par framework (ex: fastapi, supabase, docker)"),
+    json_output: bool = typer.Option(False, "--json", help="Sortie JSON structurée pour agents"),
+) -> None:
+    """Recherche sémantique des règles de sécurité et de leurs patterns Do/Don't."""
+    from rich.panel import Panel
+    from .search import search_rules
+
+    results = search_rules(query, limit=limit, framework=framework or None)
+    if not results:
+        if json_output:
+            console.print(json.dumps({"query": query, "count": 0, "results": []}))
+        else:
+            console.print(f"[yellow]Aucune règle trouvée pour :[/yellow] {query!r}")
+        return
+
+    if json_output:
+        data = {
+            "query": query,
+            "count": len(results),
+            "results": [r.to_agent_card() for r in results],
+        }
+        console.print(json.dumps(data, indent=2, ensure_ascii=False))
+        return
+
+    console.print(f"\n[bold cyan]Résultats pour :[/bold cyan] [white]{query}[/white] ({len(results)} règle(s) trouvée(s))\n")
+    for res in results:
+        rule = res.rule
+        sev_color = "red" if rule.severity.value == "critical" else ("yellow" if rule.severity.value == "high" else "blue")
+        title = f"[{sev_color} bold][{rule.severity.value.upper()}][/{sev_color} bold] {rule.title} [dim]({rule.id})[/dim]"
+
+        lines: list[str] = [
+            f"[bold]Catégorie :[/bold] {rule.category.value} | [bold]Frameworks :[/bold] {', '.join(rule.all_frameworks) or 'universel'}",
+            f"[bold]Score de pertinence :[/bold] {res.score:.1f} [dim](termes : {', '.join(res.matched_terms)})[/dim]",
+            f"\n[bold]Pourquoi :[/bold]\n{rule.rationale.strip()}",
+        ]
+
+        if rule.effective_dont_pattern:
+            lines.append("\n[red bold]❌ DON'T (Piège fréquent LLM) :[/red bold]")
+            lines.append(f"[red]{rule.effective_dont_pattern.strip()}[/red]")
+
+        if rule.effective_do_pattern:
+            lines.append("\n[green bold]✅ DO (Pattern sécurisé recommandé) :[/green bold]")
+            lines.append(f"[green]{rule.effective_do_pattern.strip()}[/green]")
+
+        if rule.evidence:
+            lines.append(f"\n[dim italic]Source : « {rule.evidence[0].quote.strip()[:180]}… » ({rule.evidence[0].source_id})[/dim italic]")
+
+        console.print(Panel("\n".join(lines), title=title, border_style=sev_color))
+
+
+
 def main() -> None:
     app()
 

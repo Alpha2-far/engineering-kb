@@ -1,6 +1,6 @@
 {
   "category": "devops",
-  "generated_at": "2026-09-08T09:30:25+00:00",
+  "generated_at": "2026-09-08T10:00:24+00:00",
   "count": 6,
   "rules": [
     {
@@ -59,6 +59,7 @@
         "code": "- name: Verifier le titre\n  env:\n    PR_TITLE: ${{ github.event.pull_request.title }}\n  run: |\n    echo \"Titre : $PR_TITLE\"     # valeur, jamais interpolee dans le script\n",
         "explanation": "Le shell recoit une variable ; son contenu n'est plus analyse comme du code."
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
@@ -164,6 +165,7 @@
         "code": "SUPABASE_SERVICE_KEY = os.environ[\"SUPABASE_SERVICE_KEY\"]   # absent = echec au demarrage\n",
         "explanation": "Le secret vit dans la configuration de la plateforme ; le depot ne contient que son nom."
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
@@ -247,6 +249,7 @@
         "code": "steps:\n  - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0\n    with:\n      persist-credentials: false\n",
         "explanation": "Le commit execute est fige ; la mise a jour devient un changement visible en revue."
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
@@ -328,6 +331,7 @@
         }
       ],
       "autofix": "review",
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
@@ -410,6 +414,7 @@
         }
       ],
       "autofix": "never",
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
@@ -481,6 +486,7 @@
         }
       ],
       "autofix": "review",
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",

@@ -1,6 +1,6 @@
 {
   "category": "frontend",
-  "generated_at": "2026-09-08T09:30:25+00:00",
+  "generated_at": "2026-09-08T10:00:24+00:00",
   "count": 1,
   "rules": [
     {
@@ -66,6 +66,7 @@
         "code": "// Si le texte suffit :\nelem.textContent = commentaire;\n\n// Si du HTML est vraiment necessaire :\nelem.innerHTML = DOMPurify.sanitize(commentaire);\n",
         "explanation": "textContent n'interprete rien ; DOMPurify ne laisse passer qu'une liste de balises et d'attributs sans effet actif."
       },
+      "frameworks": [],
       "evidence": [
         {
           "source_id": "owasp-cheatsheets",
