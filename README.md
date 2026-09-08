@@ -1,133 +1,193 @@
 # Engineering Knowledge Base (`kb`)
 
-### *Verified Engineering Knowledge & Policy Enforcement for AI-Assisted Software Development*
+### *Verified Engineering Knowledge & Development-Time Enforcement for AI-Assisted Software Engineering*
 
 [![CI](https://github.com/Alpha2-far/engineering-kb/actions/workflows/ci.yml/badge.svg)](https://github.com/Alpha2-far/engineering-kb/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.12%2B-3776AB.svg?logo=python&logoColor=white)
 ![Package Manager](https://img.shields.io/badge/uv-astral-DE5FE9.svg)
 ![Rules](https://img.shields.io/badge/verified%20rules-51%20active-success.svg)
-![Grounding](https://img.shields.io/badge/grounding%20judge-100%25%20verified-brightgreen.svg)
+![Grounding](https://img.shields.io/badge/grounding%20judge-100%25%20anchored-brightgreen.svg)
 ![Tests](https://img.shields.io/badge/tests-94%2F94%20passing-brightgreen.svg)
 ![MCP Server](https://img.shields.io/badge/mcp%20server-fastmcp%20native-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 ---
 
-## 🧭 Ce qu'est `kb` aujourd'hui
+## 1. Introduction : De la Base de Connaissances à la Couche d'Enforcement
 
-**`kb`** est une couche d'infrastructure logicielle qui transforme des standards d'ingénierie officiels et vérifiés en **contraintes opérationnelles exécutables et opposables** (*policy enforcement*) pour les développeurs et les agents de code IA (Claude Code, Cursor, Antigravity, Codex, GitHub Copilot).
+`kb` est né d'un constat simple : la documentation d'ingénierie logicielle (standards OWASP, RFCs, guides CIS, spécifications officielles) est riche, mais dispersée et rarement exploitable directement au moment où le code est écrit. Le projet a donc débuté comme une **Engineering Knowledge Base** rigoureuse, collectant et vérifiant les meilleures pratiques de conception logicielle.
 
-Dans un cycle de développement assisté par IA, le piège le plus coûteux réside dans l'illusion de conformité : un modèle de langage génère facilement du code qui s'exécute sans erreur de syntaxe, mais qui enfreint silencieusement les règles architecturales élémentaires (montage de sockets Docker en root, cookies de session sans attribut SameSite, contournement d'isolation multi-tenant après recherche vectorielle, signatures JWT non imposées par le serveur).
+Cependant, avec l'émergence des agents de code autonomes (Claude Code, Cursor, Codex, Antigravity, GitHub Copilot), la nature du problème a changé d'échelle :
+> **Le logiciel généré par IA peut être parfaitement fonctionnel en apparence — démarrer sans erreur de syntaxe et passer des tests unitaires basiques — tout en violant silencieusement des contraintes d'ingénierie et de sécurité majeures.**
 
-Pour répondre à ce défi, `kb` ne se contente pas de stocker de la documentation : il applique une **doctrine de défense en profondeur** articulée autour de trois verrous temporels :
-1. **Informer l'agent avant génération** via des contrats de sécurité formels et FastMCP.
-2. **Guider le développement** en injectant des directives normatives délimitées dans l'environnement de l'agent.
-3. **Bloquer mécaniquement les régressions** avant intégration via un garde-fou git pré-commit ultra-rapide (< 100 ms).
+Monter le socket Docker de l'hôte dans un conteneur d'outillage (`/var/run/docker.sock`), omettre l'attribut `SameSite` sur un cookie de session, ne pas imposer explicitement l'algorithme de vérification d'un JWT côté serveur, ou omettre le filtre de tenant avant une requête vectorielle pgvector sont des erreurs fréquentes que les modèles de langage commettent couramment lorsqu'ils ne sont pas explicitement contraints. Le phénomène dit de *vibe coding* n'est qu'une manifestation visible de cette rupture entre l'illusion de fonctionnement et la rigueur d'ingénierie.
+
+Pour répondre à ce défi, `kb` a progressivement évolué : d'une base de documentation passive, le système est devenu une **couche de vérification et d'enforcement pour le développement assisté par IA**. Il ne se contente plus de répondre aux requêtes : il conditionne l'agent avant génération, inscrit les exigences au cœur du projet, et fournit un garde-fou git capable d'intercepter les régressions critiques avant leur intégration.
 
 ---
 
-## 📐 L'Évolution Architecturale : De la Connaissance à l'Enforcement
+## 2. La Trajectoire Technologique : Les 5 Paliers de Confiance
 
-`kb` n'est pas une simple collection de documents à laquelle un scanner de sécurité aurait été greffé. Le système a été conçu selon une trajectoire d'ingénierie incrémentale et cohérente, où chaque couche renforce le niveau de confiance de la suivante :
+L'architecture actuelle de `kb` est l'aboutissement d'une progression technologique délibérée, où chaque palier s'appuie sur la solidité du précédent :
 
 ```text
-1. Knowledge Base
-   └─ Ingestion et archivage de sources d'ingénierie autoritaires (OWASP, RFCs, NIST, CIS, docs officielles).
+1. Documentation & Knowledge
+   └─ Ingestion et archivage de 95 sources d'ingénierie officielles (OWASP, RFCs, NIST, CIS, docs frameworks).
            ↓
 2. Verified Engineering Knowledge
-   └─ Grounding Judge déterministe : ancrage textuel obligatoire (seuil ≥ 85 %) garantissant 0 hallucination.
+   └─ Grounding Judge déterministe : validation mathématique de chaque citation (seuil ≥ 85 %) garantissant des règles fondées.
            ↓
-3. Agent-Accessible Intelligence
-   └─ Serveur FastMCP natif & recherche sémantique : patterns DO / DON'T et contrats de stack prêts à l'emploi.
+3. Agentic Intelligence
+   └─ Interface FastMCP & recherche sémantique : patterns DO / DON'T et contrats de stack directement consommables par les LLMs.
            ↓
 4. Mechanical Code Auditing
-   └─ Audit statique in-memory & moteur multi-fichiers tri-state (matière / sans occurrence / hors-périmètre).
+   └─ Analyse statique in-memory & moteur multi-fichiers tri-state distinguant l'occurrence, l'absence et le hors-périmètre.
            ↓
 5. Development-Time Enforcement
-   └─ Verrous actifs : garde-fous de projet délimités et hook git pré-commit bloquant les régressions critiques.
+   └─ Points de contrôle actifs : directives de projet délimitées et garde-fou git pré-commit (< 100 ms) bloquant le commit.
 ```
 
-### Le changement de paradigme fondamental
-
-Au départ, le système répondait à la question :
-> *« Quelle règle d'ingénierie dois-je appliquer, et quelle est sa source officielle ? »*
-
-L'architecture actuelle répond désormais à une exigence de production supérieure :
-> *« Comment garantir que les contraintes d'ingénierie soient connues de l'agent avant qu'il n'écrive, respectées pendant la génération, et vérifiées mécaniquement avant que le code ne puisse être intégré au dépôt ? »*
+Cette trajectoire reflète un changement de posture fondamental :
+- **Au début, `kb` répondait à** : *« Quelle règle d'ingénierie dois-je appliquer, et quelle est sa source ? »*
+- **Aujourd'hui, `kb` répond à** : *« Comment faire en sorte que les contraintes d'ingénierie pertinentes soient connues par l'agent, appliquées pendant la génération et vérifiées mécaniquement avant que le code ne puisse être intégré au dépôt ? »*
 
 ---
 
-## 🔒 Les Trois Verrous d'Enforcement (Défense en Profondeur)
+## 3. Le Socle Fondamental : Une Connaissance Ancrée et Prouvable
 
-Plutôt qu'un contrôle unique et tardif, `kb` positionne des points de contrôle à chaque moment charnière du cycle de conception :
+Le passage à l'enforcement ne dilue pas l'exigence documentaire originelle : il la rend indispensable. **L'enforcement ne peut pas reposer sur des opinions ou des synthèses floues générées à la volée par un LLM.** Pour être légitime et opposable à un développeur ou à un agent, chaque contrainte doit découler d'une règle formellement ancrée dans un standard officiel.
+
+```text
+Sources Officielles (95 dépôts / docs)
+           ↓ (Acquisition Git sparse clone / HTTP à coût 0)
+Archive Locale brute (raw/ — gitignorée)
+           ↓
+Grounding Judge (uv run kb validate)
+   ├─ Calcul de distance de Levenshtein entre citation déclarée et texte source brut
+   ├─ Seuil strict d'ancrage textuel ≥ 85 %
+   └─ Rejet automatique : aucune règle n'est compilée sans preuve matérielle
+           ↓
+51 Règles Normatives Actives (0 rejet d'ancrage)
+           ↓
+Contrats de Sécurité & Profils d'Enforcement
+```
+
+### La Chaîne de Confiance
+Toute contrainte imposée par `kb` obéit à la chaîne :
+**Source officielle → Archive locale → Citation exacte → Règle avec Do/Don't → Validation par le Grounding Judge → Connaissance exploitable → Enforcement.**
+
+Le *Grounding Judge* ne prétend pas empêcher un modèle de langage d'halluciner de manière générale : sa garantie technique est spécifique et mesurable. Il assure que **chaque règle inscrite au catalogue s'appuie sur une citation textuelle vérifiée dans l'archive officielle selon son critère de validation**.
+
+---
+
+## 4. L'Interface Agentique : Le Rôle de FastMCP
+
+Le protocole **Model Context Protocol (MCP)** constitue l'interface d'accès agentique à la connaissance et aux capacités de vérification de `kb`. Ce n'est pas le produit lui-même, mais la passerelle native permettant aux agents (Cursor, Claude Code, Antigravity, Claude Desktop) d'interagir avec le moteur via le transport standard `stdio`.
+
+### Les 4 Outils Exposés aux Agents
+
+| Outil FastMCP | Rôle dans le cycle de vie | Entrée typique | Données restituées |
+|---|---|---|---|
+| `get_security_contract` | **Amont (Pré-Codage)** : charge les invariants et la checklist d'une stack | `stack="fastapi-supabase-rag"` | Contrat Markdown avec invariants absolus et patterns DO |
+| `resolve_security_topic` | Mappe une intention naturelle vers les règles normatives applicables | `topic="JWT FastAPI"` | Topic résolu + liste ordonnée des IDs de règles |
+| `get_security_rules` | Fiches de sécurité compactes avec justifications et patterns DO / DON'T | `rule_ids=["..."]` | Markdown condensé optimisé pour le contexte du LLM |
+| `audit_code_snippet` | **Audit en Mémoire** : évalue un extrait généré avant écriture sur disque | `code="...", filename="auth.py"` | Verdict (`clean: bool`), infractions détectées, remédiation |
+
+---
+
+## 5. De l'Observation à l'Action : Distinguer Audit et Enforcement
+
+Pour comprendre la structure des contrôles de `kb`, il est essentiel de distinguer deux postures d'ingénierie :
+
+- **L'Audit (`kb audit`, `audit_code_snippet`)** :
+  > *« Voici ce que j'ai observé dans le code. »*  
+  C'est un mécanisme d'inspection statique qui cartographie le code existant. Il classe les constats selon le principe tri-state (*avec matière*, *sans occurrence*, *hors-périmètre*) pour informer l'ingénieur ou l'agent sans interrompre directement les flux d'exécution.
+
+- **L'Enforcement (`kb init-guardrail`, `kb guard`)** :
+  > *« Cette contrainte est active, et cette violation détectée bloque l'étape suivante du workflow. »*  
+  C'est un mécanisme d'action qui intervient mécaniquement dans le cycle de développement pour empêcher qu'une régression critique ne soit validée ou intégrée.
+
+---
+
+## 6. Les Trois Verrous Temporels d'Enforcement (Défense en Profondeur)
+
+L'enforcement de `kb` n'est pas une suite d'outils disparates, mais une combinaison de **trois points de contrôle temporels** répartis le long du cycle de développement :
 
 ```mermaid
 flowchart TD
-    A["Sources Officielles Ancrées<br/>(OWASP, RFCs, Docker, Supabase)"] --> B["Contrats Normatifs & Profils<br/>(fastapi-supabase-rag, docker-compose, etc.)"]
-    
-    subgraph S1 ["1. Verrou Pré-Génération (Shift-Left)"]
-        B --> C["FastMCP : get_security_contract<br/>CLI : kb contract &lt;stack&gt;"]
-        C --> D["Agent IA conditionné par les Invariants & Patterns DO"]
+    subgraph S1 ["Point 1 : Avant d'écrire (Pré-Génération)"]
+        A["Contrat de Stack Normatif<br/>FastMCP : get_security_contract<br/>CLI : kb contract &lt;stack&gt;"] --> B["L'agent charge les 3 à 5 invariants<br/>et les patterns DO de référence"]
     end
-    
-    subgraph S2 ["2. Verrou de Projet (Contexte Développeur)"]
-        D --> E["kb init-guardrail [PATH]<br/>(.cursorrules, AGENTS.md, CLAUDE.md)"]
-        E --> F["Code généré sous contraintes explicites"]
+
+    subgraph S2 ["Point 2 : Pendant qu'on développe (Contexte Projet)"]
+        B --> C["kb init-guardrail [PATH]<br/>(.cursorrules, AGENTS.md, CLAUDE.md)"]
+        C --> D["Directives de sécurité délimitées et actives<br/>dans l'environnement de travail de l'agent"]
+        D --> E["Génération et retouches de code sous contraintes"]
     end
-    
-    subgraph S3 ["3. Verrou d'Intégration (Dernière Barrière)"]
-        F --> G{"kb guard &lt;PATH&gt;<br/>Hook Git Pre-Commit (&lt; 100 ms)"}
-        G -->|Violation Critique| H["Commit Bloqué 🛑<br/>Affichage Ligne + Remédiation DO"]
-        H -.->|Correction immédiate| F
-        G -->|Conforme| I["Commit Validé ✅"]
-    end
-    
-    subgraph S4 ["4. Certification d'Auditabilité"]
-        I --> J["kb verify [PATH]<br/>kb-audit-certificate.json (SHA-256) + Badge SVG"]
+
+    subgraph S3 ["Point 3 : Avant d'intégrer (Garde-Fou Git Pre-Commit)"]
+        E --> F{"kb guard &lt;PATH&gt;<br/>Hook Git Pre-Commit (&lt; 100 ms)"}
+        F -->|Violation Critique| G["Commit Bloqué Mécaniquement 🛑<br/>Affichage Ligne + Pattern DO de Remédiation"]
+        G -.->|Correction immédiate| E
+        F -->|Conforme| H["Commit Validé dans l'Historique Git ✅"]
     end
 ```
 
-### 1. Avant Génération : Les Contrats de Sécurité (`get_security_contract` & `kb contract`)
-L'agent consulte le contrat de sécurité applicable à la stack cible dès l'initialisation de sa tâche. Le contrat lui fournit les 3 à 5 invariants non négociables, la checklist d'attestation pré-codage et les patterns de code sécurisés (DO) de référence.
-
-### 2. Pendant le Développement : Les Guardrails de Projet (`kb init-guardrail`)
-La commande `kb init-guardrail` injecte de façon **idempotente et délimitée** (`<!-- KB-SECURITY-GUARDRAIL-START -->` ... `<!-- KB-SECURITY-GUARDRAIL-END -->`) les directives de sécurité obligatoires dans les configurations d'agents détectées (`.cursorrules`, `AGENTS.md`, `CLAUDE.md`, `.github/copilot-instructions.md`). Les règles antérieures du développeur ne sont jamais altérées.
-
-### 3. Avant Intégration : Le Garde-Fou Git Pré-Commit (`kb guard`)
-Dernière ligne de défense, `kb guard` analyse les modifications indexées (`git add`) via `git show :<path>` en **moins de 100 ms**. Si une violation de sévérité critique ou haute subsiste, le commit est bloqué mécaniquement avec indication précise de la ligne fautive et affichage immédiat du pattern DO de remédiation.
+### Pourquoi ces trois positions temporelles ?
+1. **Avant d'écrire (Point 1)** : Réduit drastiquement les erreurs à la source en fournissant le cadre architectural (invariants et patterns DO) à l'agent avant qu'il ne formule sa réponse.
+2. **Pendant qu'on développe (Point 2)** : Maintient les contraintes vivantes dans l'espace de contexte du projet via des blocs idempotents délimités (`<!-- KB-SECURITY-GUARDRAIL-START -->` ... `<!-- KB-SECURITY-GUARDRAIL-END -->`), sans jamais altérer les instructions personnelles du développeur.
+3. **Avant d'intégrer (Point 3)** : Constitue la dernière barrière mécanique. `kb guard` inspecte fidèlement ce qui est indexé dans git (`git show :<path>`) en **moins de 100 ms**. Si une infraction critique ou haute est présente, le commit échoue avec code de sortie 1.
 
 ---
 
-## 🛠️ Exemple Concret : Neutraliser une Faille Silencieuse
+## 7. La Couche de Certification d'Auditabilité (`kb verify`)
 
-### Scénario : Génération d'une infrastructure Docker & Backend FastAPI
+Là où les trois verrous précédents agissent comme des contrôles opérationnels bloquants, **`kb verify`** intervient comme une **couche de certification et d'attestation formelle**.
 
-Un agent IA reçoit la directive : *« Configure un conteneur d'outillage Docker et configure la session utilisateur en FastAPI. »*
+```bash
+# Audite le projet et émet les artefacts d'auditabilité
+kb verify . --profile saas --badge
+```
 
-#### ❌ Sans KB (Approche non encadrée)
-L'agent produit un code qui fonctionne immédiatement :
+### Ce que produit `kb verify` :
+1. **`kb-audit-certificate.json`** : Un certificat d'auditabilité formel scellé par une **empreinte cryptographique SHA-256** calculée sur le digest des résultats d'évaluation, le commit git actif, le profil appliqué et la liste des sources d'autorité citées.
+2. **`KB-AUDIT-CERTIFICATE.md`** : Un rapport lisible pour les comités d'architecture, revues de code ou livrables clients.
+3. **`kb-badge.svg`** : Un badge vectoriel autonome aux couleurs de la doctrine de confiance (Évergreen `#2E4A3F` pour *Verified 100%*).
+
+`kb verify` ne remplace pas les tests ou les revues de code manuelles : il atteste de manière vérifiable et non répudiable qu'une base de code a été confrontée avec succès aux règles normatives du profil choisi.
+
+---
+
+## 8. Étude de Cas : Neutraliser les Violations Silencieuses
+
+### Le Scénario : Outillage Docker & Authentification FastAPI
+
+Un développeur demande à un agent de code : *« Ajoute un conteneur d'outillage dans docker-compose et configure la session utilisateur dans le backend FastAPI. »*
+
+#### ❌ Sans KB (Fonctionnel mais vulnérable)
+L'agent propose un code qui s'exécute immédiatement sans la moindre erreur :
 ```yaml
 # docker-compose.yml
 services:
-  agent-runner:
+  tooling:
     image: alpine
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock  # ⚠️ Faille critique : accès root total sur l'hôte
+      - /var/run/docker.sock:/var/run/docker.sock  # ⚠️ Risque critique : accès root direct à l'hôte
 ```
 ```python
 # auth.py
-response.set_cookie(key="session", value=token, httponly=True)  # ⚠️ Faille haute : absence de SameSite & Secure
+response.set_cookie(key="session_id", value=token, httponly=True)  # ⚠️ Risque haut : pas de SameSite ni Secure
 ```
-*Le développeur teste le service : tout démarre, les requêtes passent, l'application fonctionne. La faille d'escalade de privilèges et la vulnérabilité CSRF entrent silencieusement en production.*
+*Le développeur démarre le conteneur, teste le login, tout fonctionne. Deux vulnérabilités architecturales sévères entrent dans la base de code sans être détectées par les tests unitaires fonctionnels.*
 
-#### ✅ Avec KB (Architecture sous contraintes)
-1. **Consultation Pré-Codage** : L'agent appelle `get_security_contract("docker-compose")`. L'invariant normatif lui interdit explicitement l'accès au socket hôte et lui impose un utilisateur non-root.
-2. **Guardrail de Projet** : `AGENTS.md` rappelle à Cursor et Claude Code l'obligation de paramétrer explicitement `samesite="lax"` ou `"strict"`.
-3. **Filet de Sécurité Git (`kb guard`)** : Si par mégarde une régression critique est introduite, le hook pre-commit intercepte l'opération instantanément :
+#### ✅ Avec KB (Sous contrôle d'enforcement)
+1. **Amont** : L'agent interroge `get_security_contract("docker-compose")`. Le contrat lui interdit explicitement le montage du socket hôte et lui prescrit un utilisateur non-root.
+2. **Contexte projet** : `CLAUDE.md` et `AGENTS.md` (initialisés via `kb init-guardrail`) imposent l'attestation des cookies `SameSite=Lax/Strict`.
+3. **Dernière barrière mécanique** : Si malgré tout un extrait fautif est indexé, `git commit` déclenche immédiatement `kb guard` :
 
 ```text
 🛑 KB Guard : Commit Bloqué !
-1 violation critique de sécurité interceptée en 48.9 ms.
+1 violation critique de sécurité interceptée en 38.4 ms.
 
 [CRITICAL] Ne jamais monter le socket Docker de l'hote dans un conteneur (docker-compose/mount-docker-socket)
   Fichier : docker-compose.yml:5 -> - /var/run/docker.sock:/var/run/docker.sock
@@ -135,30 +195,28 @@ response.set_cookie(key="session", value=token, httponly=True)  # ⚠️ Faille 
   💡 Pattern Sécurisé Recommandé (DO) :
   Exposer une API dédiée avec mTLS ou orchestrer via un agent distant non privilégié.
 ```
-Le commit est rejeté tant que le pattern conforme n'est pas appliqué.
+Le commit est interrompu tant que le pattern conforme n'est pas appliqué.
 
 ---
 
-## 🚀 Démarrage Rapide
+## 9. Prise en Main & Intégration
 
-### 1. Zero-Config via `uvx` (Sans clonage préalable)
-
-`kb` est packagé pour une exécution immédiate sans dépendance globale :
+### 1. Exécution Immédiate via `uvx` (Zero-Config)
 
 ```bash
-# Lancer le serveur FastMCP en 1 commande
+# Démarrer le serveur FastMCP (transport stdio)
 uvx --from git+https://github.com/Alpha2-far/engineering-kb.git kb mcp
 
-# Inspecter les contrats de sécurité normatifs
+# Inspecter les contrats normatifs disponibles
 uvx --from git+https://github.com/Alpha2-far/engineering-kb.git kb contract --list
 
-# Installer le hook git pré-commit dans votre projet
+# Installer le hook git pré-commit dans le dépôt courant
 uvx --from git+https://github.com/Alpha2-far/engineering-kb.git kb guard --install-hook
 ```
 
-### 2. Configuration MCP pour votre Environnement IA
+### 2. Configuration MCP des Clients IA
 
-Des presets complets sont mis à disposition dans le répertoire [`presets/`](presets/) :
+Les presets complets sont disponibles dans [`presets/`](presets/) :
 
 #### Claude Code (CLI)
 ```bash
@@ -177,19 +235,7 @@ claude mcp add kb-security uvx --from git+https://github.com/Alpha2-far/engineer
 }
 ```
 
-#### Google Antigravity IDE (`mcp_config.json`)
-```json
-{
-  "mcpServers": {
-    "kb-security": {
-      "command": "uvx",
-      "args": ["--from", "git+https://github.com/Alpha2-far/engineering-kb.git", "kb", "mcp"]
-    }
-  }
-}
-```
-
-#### Claude Desktop (`claude_desktop_config.json`)
+#### Antigravity IDE (`mcp_config.json`)
 ```json
 {
   "mcpServers": {
@@ -203,123 +249,85 @@ claude mcp add kb-security uvx --from git+https://github.com/Alpha2-far/engineer
 
 ---
 
-## 🧩 Catalogue des Outils FastMCP
+## 10. Moteur Tri-State & Profils d'Audit
 
-Le serveur FastMCP natif expose 4 points d'entrée proactifs pour assister les modèles de langage :
+Lorsqu'un audit statique est exécuté (`kb audit`), le moteur écarte rigoureusement le risque de « faux-calme » en distinguant trois états pour chaque règle :
 
-| Outil MCP | Rôle dans le workflow | Paramètres clés | Sortie |
-|---|---|---|---|
-| `get_security_contract` | **Shift-Left Pré-Codage** : charge les invariants et checklist d'une stack | `stack="fastapi-supabase-rag"` | Contrat Markdown avec invariants absolus et patterns DO |
-| `resolve_security_topic` | Mappe une intention naturelle vers les règles normatives applicables | `topic="JWT FastAPI"`, `framework="fastapi"` | Topic structuré + IDs de règles prioritaires |
-| `get_security_rules` | Fiches condensées avec justifications et patterns DO / DON'T | `rule_ids=["..."]` ou `topic="..."` | Markdown compact pour injection dans le contexte |
-| `audit_code_snippet` | **Auto-remédiation** : audit statique en mémoire d'un extrait | `code="...", filename="main.py"` | Verdict (`clean: bool`), liste d'infractions, remédiation |
-
----
-
-## 🏛️ Le Moteur Historique : Sources Canoniques & Grounding Judge
-
-La robustesse de `kb` repose sur un principe immuable : **aucune règle n'est inventée ni paraphrasée sans preuve.**
-
-```text
-Registre Officiel (95 sources)
-         ↓ (Git sparse clone / HTTP direct — Coût 0)
-Archive Locale brute (raw/)
-         ↓
-Grounding Judge (uv run kb validate)
-         ├─ Vérification mathématique par Levenshtein / ancre
-         ├─ Seuil strict ≥ 85 % d'ancrage textuel
-         └─ Rejet immédiat si la citation n'existe pas dans la source
-         ↓
-Règles Compilées & Profils Spécialisés (packs/)
-```
-
-### Registre des 95 Sources Officielles
-- **Sécurité Applicative & Auth** : OWASP ASVS v4.0.3, OWASP Top 10, OWASP Cheatsheet Series, RFC 6749 (OAuth2), RFC 7519 (JWT), RFC 8446 (TLS 1.3), NIST SP 800-63B.
-- **Conteneurs & Cloud** : CIS Docker Benchmark v1.6.0, CIS Kubernetes Benchmark v1.8.0, Docker Security Best Practices.
-- **IA & Systèmes RAG** : OWASP Top 10 for LLM Applications v2.0, Supabase Hardening Guides, pgvector Documentation.
-- **Frameworks** : Documentation officielle FastAPI, Next.js, Express, PostgreSQL.
-
-### Le Principe Tri-State de l'Audit Engine
-Lorsqu'un audit de code est exécuté (`kb audit` ou `kb verify`), le moteur distingue rigoureusement 3 états :
-
-| État | Définition | Signification technique |
+| État | Définition technique | Interprétation rigoureuse |
 |---|---|---|
-| **Règle avec matière** | Présence d'un motif suspect (`grep`) ou absence d'une directive obligatoire (`absent`) | Zone à inspecter ou corriger impérativement |
-| **Sans occurrence** | Fichiers du périmètre analysés, aucun motif vulnérable détecté | Conforme sur le périmètre évalué |
-| **Hors-périmètre** | Aucun fichier du projet ne correspond aux motifs de la règle (ex: pas de Dockerfile) | **Non évalué** — ne sera jamais qualifié faussement de « conforme » |
+| **Règle avec matière** | Motif vulnérable identifié (`grep`) ou motif obligatoire absent (`absent`) | Infraction avérée ou point d'attention immédiat |
+| **Sans occurrence** | Fichiers visés analysés, aucun motif suspect relevé | Conforme sur le périmètre inspecté |
+| **Hors-périmètre** | Aucun fichier du projet ne correspond au glob (ex: pas de Dockerfile) | **Non évalué** — ne sera jamais qualifié faussement de « conforme » |
+
+### Les 6 Profils Compilés
+- `saas` : Applications web CRUD, architectures multi-tenants, sessions (48 règles).
+- `ai-rag` : Systèmes d'IA générative, bases vectorielles, injections de prompt (43 règles).
+- `api` : Microservices et architectures API REST/GraphQL (42 règles).
+- `pipeline` : Traitements batch et pipelines de données (19 règles).
+- `cli` : Outils en ligne de commande et scripts d'administration (17 règles).
+- `static-site` : Sites statiques et interfaces web légères (8 règles).
 
 ---
 
-## 💻 Référence Complète de la CLI (`kb`)
+## 11. Référence Complète de la CLI (`kb`)
 
 ```bash
-# ------------------------------------------------------------------------------
-# 1. ENFORCEMENT & GUARDRAILS (Cycle de Dev)
-# ------------------------------------------------------------------------------
+# --- Enforcement & Contrôles de Développement ---
 kb init-guardrail [PATH]           # Injecte les directives dans .cursorrules, AGENTS.md, CLAUDE.md
-kb init-guardrail . --stack <id>   # Injecte les invariants d'une stack technologique
-kb init-guardrail . --check        # Vérifie si les guardrails sont présents et actifs (code 0/1)
+kb init-guardrail . --stack <id>   # Injecte les invariants d'une stack technologique spécifique
+kb init-guardrail . --check        # Vérifie si les guardrails sont en place et actifs (code 0/1)
 
 kb guard [PATH]                    # Analyse instantanée (< 100 ms) des fichiers git staged
 kb guard --install-hook            # Installe le hook bloquant .git/hooks/pre-commit
-kb guard --all                     # Analyse tous les fichiers modifiés de l'arbre de travail
+kb guard --all                     # Analyse tous les fichiers modifiés du répertoire de travail
 
 kb verify [PATH]                   # Émet le certificat d'auditabilité officiel kb-audit-certificate.json
 kb verify . --badge                # Génère en plus le badge vectoriel SVG autonome (kb-badge.svg)
 
-# ------------------------------------------------------------------------------
-# 2. EXPLORATION & CONTRATS
-# ------------------------------------------------------------------------------
+# --- Contrats Normatifs & Recherche ---
 kb contract --list                 # Liste l'ensemble des contrats de sécurité disponibles
 kb contract <stack-id>             # Affiche le détail complet d'un contrat en console
 kb search "<requête>"              # Recherche sémantique par intention technique ou technologie
 
-# ------------------------------------------------------------------------------
-# 3. AUDIT MULTI-FICHIERS PAR PROFIL
-# ------------------------------------------------------------------------------
-kb audit saas /path/to/project     # Profil SaaS web CRUD (48 règles)
-kb audit ai-rag /path/to/rag-app   # Profil Systèmes IA, RAG et vecteurs (43 règles)
-kb audit api /path/to/service      # Profil Microservices et APIs sans front (42 règles)
-kb audit cli /path/to/script       # Profil Outils CLI et scripts d'automatisation (17 règles)
+# --- Audit Statique par Profil ---
+kb audit saas /path/to/project     # Audit complet d'un projet web selon le profil saas
+kb audit ai-rag /path/to/project   # Audit d'une architecture RAG selon le profil ai-rag
 
-# ------------------------------------------------------------------------------
-# 4. GESTION DE LA KNOWLEDGE BASE
-# ------------------------------------------------------------------------------
-kb validate                        # Exécute le Grounding Judge (contrôle d'ancrage strict)
+# --- Gestion de la Base de Connaissances ---
+kb validate                        # Exécute le Grounding Judge (validation d'ancrage textuel)
 kb compile                         # Compile les règles validées dans les profils packs/
 kb mcp                             # Démarre le serveur FastMCP natif (transport stdio)
 ```
 
 ---
 
-## 🧪 Tests & Rigueur d'Ingénierie
+## 12. Assurance Qualité & Tests
 
-Le projet est couvert par **94 tests automatisés** (unitaires, intégration MCP, analyse git et simulation d'agents) exécutés sur chaque pull request via GitHub Actions :
+Le projet est validé par une suite complète de **94 tests automatisés** exécutés sur chaque modification via GitHub Actions CI :
 
 ```bash
-# Lancement de la suite complète
 uv run pytest -v
 ```
 
-Les tests valident en particulier :
-- L'ancrage textuel exact contre les documents sources réels (`test_ground.py`).
-- Le scoring d'intention et la recherche sémantique pondérée (`test_search.py`).
-- L'exécution du serveur FastMCP et les appels asynchrones d'outils (`test_mcp.py`).
-- Les contrats de sécurité et la résolution d'alias (`test_contracts.py`).
-- L'injection idempotente et la non-altération du code utilisateur (`test_guardrail_cli.py`).
-- L'interception mécanique des violations git sous les 100 ms et la certification SHA-256 (`test_guard_and_certificate.py`).
-- La chaîne d'auto-remédiation de bout en bout (`test_e2e_agent.py`).
+Les tests garantissent la fiabilité des modules critiques :
+- Ancrage des citations contre les sources officielles réelles (`test_ground.py`).
+- Recherche sémantique pondérée et scoring d'intention (`test_search.py`).
+- Outils et transport du serveur FastMCP (`test_mcp.py`).
+- Résolution et intégrité des contrats de stack (`test_contracts.py`).
+- Idempotence et préservation des directives développeur dans l'injection (`test_guardrail_cli.py`).
+- Interception mécanique pré-commit sous les 100 ms et signature SHA-256 (`test_guard_and_certificate.py`).
+- Scénario d'auto-remédiation d'agent de bout en bout (`test_e2e_agent.py`).
 
 ---
 
-## 📁 Structure du Répertoire
+## 13. Structure du Répertoire
 
 ```text
 kb/
 ├── .github/              # Workflows CI (tests pytest, validation d'ancrage, compilation)
-├── packs/                # Sorties compilées (profils, catégories JSON et index)
-│   ├── by-category/      # Règles indexées par domaine (app-security, devops, database, etc.)
-│   └── profiles/         # Profils compilés (saas.json, ai-rag.json, api.json, etc.)
+├── packs/                # Sorties compilées (profils JSON et index de distribution)
+│   ├── by-category/      # Règles indexées par domaine d'ingénierie
+│   └── profiles/         # Profils compilés (saas.json, ai-rag.json, etc.)
 ├── presets/              # Fichiers de configuration client MCP prêts à copier (Cursor, Claude, etc.)
 ├── rules/                # Définitions YAML des 51 règles normatives et citations officielles
 ├── sources/              # Registre des 95 sources officielles autorisées (registry.yaml)
@@ -329,7 +337,7 @@ kb/
 │   ├── cli.py            # Interface CLI Typer & Rich
 │   ├── contracts.py      # Définition et résolution des contrats de stack normatifs
 │   ├── guard.py          # Analyseur git pre-commit ultra-rapide (< 100 ms)
-│   ├── guardrail.py      # Moteur d'injection délimitée multi-agents (.cursorrules, AGENTS.md, etc.)
+│   ├── guardrail.py      # Moteur d'injection délimitée multi-agents
 │   ├── schema.py         # Modèles Pydantic stricts (Rule, Contract, Certificate, Findings)
 │   ├── search.py         # Moteur de recherche sémantique pondéré
 │   └── server.py         # Serveur FastMCP proactif natif
@@ -338,14 +346,10 @@ kb/
 
 ---
 
-## 🤝 Contribution & Éthique de Preuve
+## 14. Contribution & Licence
 
-Les contributions de nouvelles règles ou sources officielles sont encouragées via [CONTRIBUTING.md](CONTRIBUTING.md).
+Les contributions de nouvelles règles ou sources officielles sont les bienvenues via [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Toute contribution doit se conformer au principe fondateur du projet : **pas d'affirmation sans source officielle archivée et vérifiable par le Grounding Judge.**
-
----
-
-## 📄 Licence
+Toute proposition doit obligatoirement satisfaire à la doctrine de preuve du projet : **pas d'affirmation sans source officielle archivée et vérifiable mathématiquement par le Grounding Judge.**
 
 Ce projet est sous licence **MIT** — voir le fichier [LICENSE](LICENSE) pour plus de détails.
