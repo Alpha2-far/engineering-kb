@@ -385,3 +385,34 @@ class SecurityTopic(BaseModel):
     rule_ids: list[str] = Field(default_factory=list, description="IDs de règles associées")
     description: str = Field(default="", description="Courte explication du risque")
 
+
+class SnippetFinding(BaseModel):
+    """Infraction mécanique détectée dans un extrait de code en mémoire."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    rule_id: str = Field(description="Identifiant de la règle enfreinte")
+    rule_title: str = Field(description="Titre de la règle")
+    severity: Severity = Field(description="Niveau de gravité de la règle")
+    category: Category = Field(description="Domaine technique de la règle")
+    line: int = Field(default=0, description="Numéro de ligne 1-indexé (0 pour motif absent)")
+    snippet: str = Field(description="Ligne fautive ou motif manquant")
+    rationale: str = Field(default="", description="Conséquence de la vulnérabilité")
+    remediation: str = Field(default="", description="Conseil de remédiation")
+    do_pattern: str | None = Field(default=None, description="Exemple de code sécurisé recommandé")
+    evidence: str | None = Field(default=None, description="Citation officielle de référence")
+
+
+class AuditVerdict(BaseModel):
+    """Verdict de l'audit statique en mémoire d'un extrait de code généré."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    clean: bool = Field(description="Vrai si aucune violation mécanique n'a été détectée")
+    filename: str = Field(description="Nom ou chemin relatif du fichier analysé")
+    checked_rules_count: int = Field(default=0, description="Nombre de règles évaluées sur ce fichier")
+    findings_count: int = Field(default=0, description="Nombre d'infractions détectées")
+    findings: list[SnippetFinding] = Field(default_factory=list, description="Détail des infractions trouvées")
+    summary: str = Field(default="", description="Synthèse textuelle lisible pour l'agent")
+
+

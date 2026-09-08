@@ -7,7 +7,8 @@
     uv run kb compile           produit les packs consommables par les agents
     uv run kb audit <prof> <ch> applique un profil compile a un projet reel
     uv run kb stats             etat de la base
-    uv run kb discover <src>    Firecrawl : trouve les URL d'une source HTML-only
+    uv run kb search <query>    recherche semantique de regles et patterns Do/Don't
+    uv run kb mcp               demarre le serveur MCP natif stdio pour agents IA
 """
 
 from __future__ import annotations
@@ -557,6 +558,15 @@ def search(
 
         console.print(Panel("\n".join(lines), title=title, border_style=sev_color))
 
+
+@app.command()
+def mcp(
+    transport: str = typer.Option("stdio", "--transport", "-t", help="Transport MCP ('stdio' par défaut)"),
+) -> None:
+    """Démarre le serveur MCP natif de KB pour agents IA (stdio)."""
+    from .server import run_server
+
+    run_server(transport=transport)
 
 
 def main() -> None:

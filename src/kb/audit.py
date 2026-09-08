@@ -247,3 +247,107 @@ def to_json(res: AuditResult) -> dict:
         "out_of_scope": [r["id"] for r in res.out_of_scope],
         "bad_patterns": [{"id": i, "pattern": p, "error": e} for i, p, e in res.bad_patterns],
     }
+
+
+def audit_snippet(
+    code: str,
+    filename: str,
+    rules: Sequence[Rule] | None = None,
+) -> AuditVerdict:
+    """Audite un extrait de code en mémoire pour détecter mécaniquement les violations de sécurité."""
+    from typing import Sequence
+    from .schema import AuditVerdict, Rule, Severity, SnippetFinding
+    from .search import get_search_engine
+
+    all_rules = list(rules) if rules is not None else get_search_engine().rules
+    findings: list[SnippetFinding] = []
+    checked_count = 0
+
+    order = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
+
+    for rule in all_rules:
+        applicable_detections = []
+        for det in rule.detection:
+            kind = det.kind.value if hasattr(det.kind, "value") else str(det.kind)
+            if kind not in ("grep", "absent"):
+                continue
+            applies = det.applies_to or []
+            if glob_match(filename, applies):
+                applicable_detections.append(det)
+
+        if not applicable_detections:
+            continue
+
+        checked_count += 1
+
+        for det in applicable_detections:
+            kind = det.kind.value if hasattr(det.kind, "value") else str(det.kind)
+            try:
+                rx = re.compile(det.pattern, re.MULTILINE)
+            except re.error:
+                continue
+
+            if kind == "grep":
+                for i, line in enumerate(code.splitlines(), 1):
+                    if rx.search(line):
+                        evidence_str = rule.evidence[0].quote if rule.evidence else None
+                        findings.append(
+                            SnippetFinding(
+                                rule_id=rule.id,
+                                rule_title=rule.title,
+                                severity=rule.severity,
+                                category=rule.category,
+                                line=i,
+                                snippet=line.strip()[:200],
+                                rationale=rule.rationale,
+                                remediation=rule.remediation,
+                                do_pattern=rule.effective_do_pattern,
+                                evidence=evidence_str,
+                            )
+                        )
+            elif kind == "absent":
+                if not rx.search(code):
+                    evidence_str = rule.evidence[0].quote if rule.evidence else None
+                    note = det.note or f"Motif obligatoire manquant : {det.pattern}"
+                    findings.append(
+                        SnippetFinding(
+                            rule_id=rule.id,
+                            rule_title=rule.title,
+                            severity=rule.severity,
+                            category=rule.category,
+                            line=0,
+                            snippet=note,
+                            rationale=rule.rationale,
+                            remediation=rule.remediation,
+                            do_pattern=rule.effective_do_pattern,
+                            evidence=evidence_str,
+                        )
+                    )
+
+    findings.sort(key=lambda f: (order.get(f.severity.value, 9), f.line))
+
+    clean = (len(findings) == 0)
+    if clean:
+        summary = f"✅ Code clean: 0 violation trouvée ({checked_count} règle(s) évaluée(s) pour {filename})."
+    else:
+        crit_count = sum(1 for f in findings if f.severity == Severity.CRITICAL)
+        high_count = sum(1 for f in findings if f.severity == Severity.HIGH)
+        med_count = sum(1 for f in findings if f.severity == Severity.MEDIUM)
+        parts = []
+        if crit_count:
+            parts.append(f"{crit_count} critique(s)")
+        if high_count:
+            parts.append(f"{high_count} haute(s)")
+        if med_count:
+            parts.append(f"{med_count} moyenne(s)")
+        summary = f"❌ {len(findings)} infraction(s) de sécurité détectée(s) dans {filename} ({', '.join(parts)})."
+
+    return AuditVerdict(
+        clean=clean,
+        filename=filename,
+        checked_rules_count=checked_count,
+        findings_count=len(findings),
+        findings=findings,
+        summary=summary,
+    )
+
