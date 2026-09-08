@@ -613,6 +613,130 @@ def contract(
     console.print(Markdown(md_content))
 
 
+@app.command(name="init-guardrail")
+def init_guardrail(
+    path: Path = typer.Argument(
+        Path("."),
+        help="Dossier racine du projet cible (par défaut: dossier courant)",
+    ),
+    stack: str | None = typer.Option(
+        None,
+        "--stack",
+        "-s",
+        help="Slug ou mot-clé de la stack pour injecter un contrat normatif (ex: fastapi-supabase-rag)",
+    ),
+    check: bool = typer.Option(
+        False,
+        "--check",
+        "-c",
+        help="Vérifier la présence et l'activité des guardrails sans modifier les fichiers",
+    ),
+    create_all: bool = typer.Option(
+        False,
+        "--create-all",
+        "-a",
+        help="Créer l'ensemble des fichiers d'agents supportés (.cursorrules, AGENTS.md, CLAUDE.md, etc.)",
+    ),
+    as_json: bool = typer.Option(
+        False,
+        "--json",
+        help="Afficher le résultat au format JSON",
+    ),
+) -> None:
+    """Initialise ou vérifie les guardrails de sécurité Shift-Left pour agents IA."""
+    from rich.panel import Panel
+    from rich.table import Table
+    from .guardrail import check_project_guardrails, init_project_guardrails
+
+    target_dir = path.resolve()
+
+    if check:
+        if not target_dir.exists():
+            if as_json:
+                console.print_json(data={"status": "error", "error": f"Le chemin '{target_dir}' n'existe pas."})
+            else:
+                console.print(f"[red bold]Erreur :[/red bold] Le chemin '{target_dir}' n'existe pas.")
+            raise typer.Exit(code=1)
+
+        report = check_project_guardrails(target_dir)
+
+        if as_json:
+            console.print_json(data=report)
+            if report["status"] != "active":
+                raise typer.Exit(code=1)
+            return
+
+        if report["status"] == "no_agent_files":
+            console.print(f"[yellow]⚠️ Aucun fichier d'instructions d'agent (.cursorrules, AGENTS.md, etc.) trouvé dans :[/yellow] {target_dir}")
+            console.print("[dim]Exécutez [bold]kb init-guardrail[/bold] pour initialiser les guardrails.[/dim]\n")
+            raise typer.Exit(code=1)
+
+        table = Table(title="État des Guardrails de Sécurité du Projet", border_style="cyan")
+        table.add_column("Fichier d'Agent", style="bold white")
+        table.add_column("Statut", justify="center")
+        table.add_column("Contrat Stack", style="cyan")
+
+        for fname, info in report["files"].items():
+            if info["is_active"]:
+                badge = "[green bold]✅ ACTIF[/green bold]"
+            else:
+                badge = "[red bold]❌ MANQUANT[/red bold]"
+            stack_label = info.get("stack_id") or "universel"
+            table.add_row(fname, badge, stack_label)
+
+        console.print(table)
+
+        if report["status"] == "active":
+            console.print(f"\n[green bold]✅ Guardrails conformes et actifs sur {report['active_files']} fichier(s) d'agents.[/green bold]\n")
+        else:
+            console.print(f"\n[red bold]❌ Guardrail manquant ou incomplet sur {report['missing_files']} fichier(s).[/red bold]")
+            console.print("[dim]Exécutez [bold]kb init-guardrail[/bold] pour injecter les blocs de sécurité.[/dim]\n")
+            raise typer.Exit(code=1)
+        return
+
+    # Mode initialisation / mise à jour
+    try:
+        res = init_project_guardrails(target_dir, stack_id=stack, force_all=create_all)
+    except ValueError as e:
+        if as_json:
+            console.print_json(data={"status": "error", "error": str(e)})
+        else:
+            console.print(f"[red bold]Erreur :[/red bold] {e}")
+        raise typer.Exit(code=1)
+
+    if as_json:
+        console.print_json(data=res)
+        return
+
+    contract_info = ""
+    if res.get("contract"):
+        c = res["contract"]
+        contract_info = f"\n[bold cyan]Contrat lié :[/bold cyan] {c['name']} [dim]({c['stack_id']})[/dim] — {len(c['invariants'])} invariant(s)"
+
+    console.print(Panel(
+        f"[bold green]🛡️ KB Shift-Left Guardrail configuré avec succès ![/bold green]{contract_info}\n"
+        f"[dim]Dossier cible : {target_dir}[/dim]",
+        border_style="green",
+    ))
+
+    table = Table(title="Fichiers d'Agents Mis à Jour", border_style="green")
+    table.add_column("Fichier d'Agent", style="bold white")
+    table.add_column("Action Effectuée", justify="center")
+
+    action_badges = {
+        "created": "[bold green]CRÉÉ[/bold green]",
+        "injected": "[green]INJECTÉ (DÉLIMITÉ)[/green]",
+        "updated": "[cyan]MIS À JOUR[/cyan]",
+        "unchanged": "[dim]INCHANGÉ[/dim]",
+    }
+
+    for rel_path, action in res["results"].items():
+        table.add_row(rel_path, action_badges.get(action, action))
+
+    console.print(table)
+    console.print("\n[dim]💡 Les agents IA (Cursor, Claude Code, Antigravity, Copilot) respecteront désormais ces directives avant d'écrire du code.[/dim]\n")
+
+
 @app.command()
 def mcp(
     transport: str = typer.Option("stdio", "--transport", "-t", help="Transport MCP ('stdio' par défaut)"),
