@@ -342,9 +342,11 @@ def validate(
 
 
 @app.command()
-def compile() -> None:  # noqa: A001 — nom de commande volontaire
+def compile(  # noqa: A001 — nom de commande volontaire
+    no_grounding: bool = typer.Option(False, "--no-grounding", help="Compiler sans verifier l'ancrage (utile en CI sans archive raw/)"),
+) -> None:
     """Compile les regles validees en packs par categorie et par profil de projet."""
-    report = validate_all()
+    report = validate_all(check_grounding=not no_grounding)
     if not report.accepted:
         console.print("[red]Aucune regle validee — rien a compiler.[/red]")
         raise typer.Exit(1)

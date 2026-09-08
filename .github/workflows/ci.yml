@@ -30,8 +30,8 @@ jobs:
       - name: Run Test Suite
         run: uv run pytest -v
 
-      - name: Validate Rules & Grounding
-        run: uv run kb validate
+      - name: Validate Rules (Schema & Non-duplication)
+        run: uv run kb validate --no-grounding
 
       - name: Verify Packs Compilation
-        run: uv run kb compile
+        run: uv run kb compile --no-grounding
